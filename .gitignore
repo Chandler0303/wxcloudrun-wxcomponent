@@ -1,6 +1,7 @@
 .idea
 .DS_Store
 .vscode
+.env
 
 client/node_modules
 client/.pnp
@@ -12,7 +13,6 @@ client/coverage
 
 # production
 client/build
-
 # misc
 client/.DS_Store
 client/.env.local
