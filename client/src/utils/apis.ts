@@ -155,3 +155,7 @@ export const uploadFileRequest: IRequestMsg = {
     url: `${HOST}/admin/upload-media`, // 修改服务状态
     method: "post"
 }
+export const setPrivacySettingRequest: IRequestMsg = {
+    url: `${HOST}/admin/privacy-setting`, // 设置隐私协议
+    method: "post"
+}

@@ -20,6 +20,7 @@ import {
     accountStatus, registerType, normalAccountStatus
 } from './enum'
 import {routes} from "../../config/route";
+import PrivacySettingDialog from './components/PrivacySettingDialog';
 
 const { TabPanel } = Tabs
 
@@ -162,6 +163,13 @@ export default function AuthorizedAccountManage() {
         },
         {
             align: 'center',
+            minWidth: 120,
+            colKey: 'releaseInfo',
+            title: '生产版本',
+            render: ({ row }) => row.releaseInfo ? row.releaseInfo.releaseVersion : '--'
+        },
+        {
+            align: 'center',
             minWidth: 100,
             colKey: 'serviceStatus',
             title: '服务状态',
@@ -177,7 +185,7 @@ export default function AuthorizedAccountManage() {
             title: '操作',
             render({ row }) {
                 return (
-                    <div style={{ width: '210px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                    <div style={{ width: '310px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
                         {
                             (row.releaseInfo && row.funcInfo.includes(17))
                             &&
@@ -189,6 +197,7 @@ export default function AuthorizedAccountManage() {
                             <a className="a" style={{ marginRight: '5px' }} onClick={() => openServiceStatus(row.appid)}>恢复服务</a>
                         }
                         <a className="a" href={`#${routes.miniProgramVersion.path}?appId=${row.appid}`}>版本管理</a>
+                        <a className="a" style={{ marginLeft: '5px' }} onClick={() => openPrivacyPolicy(row.appid)}>完善用户协议</a>
                     </div>
                 );
             },
@@ -210,6 +219,9 @@ export default function AuthorizedAccountManage() {
     const [selectedTab, setSelectedTab] = useState<string | number>(tabs[0].value)
     const [visibleQrcode, setVisibleQrcode] = useState(false)
     const [qrcode, setQrcode] = useState('')
+    const [visiblePrivacyDialog, setVisiblePrivacyDialog] = useState(false)
+    const [currentPrivacyAppId, setCurrentPrivacyAppId] = useState('')
+    const [currentPrivacyData, setCurrentPrivacyData] = useState<any>(null)
 
     useEffect(() => {
         if (selectedTab === tabs[0].value) {
@@ -298,6 +310,22 @@ export default function AuthorizedAccountManage() {
         }
     }
 
+    const openPrivacyPolicy = (appId: string) => {
+        // 从列表中找到对应的小程序数据
+        const miniProgram: any = miniProgramList.find((item: any) => item.appid === appId)
+        if (miniProgram && miniProgram.privacySettingInfo) {
+            setCurrentPrivacyAppId(appId)
+            setCurrentPrivacyData(miniProgram.privacySettingInfo)
+            setVisiblePrivacyDialog(true)
+        } else {
+            MessagePlugin.warning('未获取到隐私信息，请稍后重试')
+        }
+    }
+
+    const handlePrivacySuccess = () => {
+        getMiniProgramList()
+    }
+
     return (
         <div>
             <p className="text">授权帐号介绍</p>
@@ -371,6 +399,14 @@ export default function AuthorizedAccountManage() {
                     <img src={qrcode} style={{width: '200px', height: '200px'}} alt="" />
                 </div>
             </Dialog>
+
+            <PrivacySettingDialog
+                visible={visiblePrivacyDialog}
+                appid={currentPrivacyAppId}
+                privacyData={currentPrivacyData}
+                onClose={() => setVisiblePrivacyDialog(false)}
+                onSuccess={handlePrivacySuccess}
+            />
 
         </div>
     )

@@ -114,6 +114,27 @@ type releaseInfo struct {
 	ReleaseQrCode  string `json:"releaseQrCode,omitempty"`
 }
 
+type privacySetting struct {
+	PrivacyKey  string `json:"privacyKey" wx:"privacy_key"`
+	PrivacyText string `json:"privacyText" wx:"privacy_text"`
+}
+
+type ownerSetting struct {
+	ContactPhone  string `json:"contactPhone" wx:"contact_phone"`
+	ContactEmail  string `json:"contactEmail" wx:"contact_email"`
+	ContactQQ     string `json:"contactQQ" wx:"contact_qq"`
+	ContactWeixin string `json:"contactWeixin" wx:"contact_weixin"`
+	ExtFileMediaID string `json:"extFileMediaID" wx:"ext_file_media_id"`
+	NoticeMethod  string `json:"noticeMethod" wx:"notice_method"`
+	StoreExpireTimestamp string `json:"storeExpireTimestamp" wx:"store_expire_timestamp"`
+}
+
+type privacySettingInfo struct {
+	PrivacyList []string          `json:"privacyList" wx:"privacy_list"`
+	SettingList []privacySetting  `json:"settingList" wx:"setting_list"`
+	OwnerSetting ownerSetting   `json:"ownerSetting" wx:"owner_setting"`
+}
+
 type expInfo struct {
 	ExpTime    int64  `json:"expTime" wx:"exp_time"`
 	ExpVersion string `json:"expVersion" wx:"exp_version"`
@@ -125,6 +146,11 @@ type getVersionInfoResp struct {
 	ReleaseInfo *releaseInfo `json:"releaseInfo,omitempty" wx:"release_info"`
 	ExpInfo     *expInfo     `json:"expInfo,omitempty" wx:"exp_info"`
 }
+
+type getPrivacySettingInfoResp struct {
+	PrivacySettingInfo *privacySettingInfo `json:"privacySettingInfo,omitempty" wx:"privacy_setting_info"`
+}
+
 type getDevWeAppListResp struct {
 	Appid         string `json:"appid"`
 	NickName      string `json:"nickName"`
@@ -132,6 +158,7 @@ type getDevWeAppListResp struct {
 	QrCodeUrl     string `json:"qrCodeUrl"`
 	ServiceStatus int    `json:"serviceStatus"`
 	getVersionInfoResp
+	getPrivacySettingInfoResp
 }
 
 type uploadMediaResp struct {
@@ -215,6 +242,25 @@ func getVersionInfo(appid string, resp *getVersionInfoResp) error {
 	}
 	return nil
 }
+
+func getPrivacySettingInfo(appid string, resp *getPrivacySettingInfoResp) error {
+	_, body, err := wx.PostWxJsonWithAuthToken(appid, "/cgi-bin/component/getprivacysetting", "", gin.H{})
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	
+	// 直接解析到 privacySettingInfo 结构体，因为微信API直接返回字段而不是嵌套
+	var privacySettingInfo privacySettingInfo
+	if err := wx.WxJson.Unmarshal(body, &privacySettingInfo); err != nil {
+		log.Errorf("Unmarshal err, %v", err)
+		return err
+	}
+	
+	resp.PrivacySettingInfo = &privacySettingInfo
+	return nil
+}
+
 
 func getImageResp(resp *http.Response, body []byte) (string, error) {
 	if len(resp.Header["Content-Type"]) > 0 && resp.Header["Content-Type"][0] == "image/jpeg" {
@@ -319,6 +365,15 @@ func getDevWeAppListHandler(c *gin.Context) {
 			} else {
 				resp[i].ReleaseInfo = versionInfo.ReleaseInfo
 				resp[i].ExpInfo = versionInfo.ExpInfo
+			}
+
+			// 获取用户隐私设置信息
+			var privacySettingInfo getPrivacySettingInfoResp
+			err = getPrivacySettingInfo(record.Appid, &privacySettingInfo)
+			if err != nil {
+				log.Error(err)
+			} else {
+				resp[i].PrivacySettingInfo = privacySettingInfo.PrivacySettingInfo
 			}
 		}(i, record)
 
@@ -566,4 +621,40 @@ func getQRCodeHandler(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, errno.OK.WithData(gin.H{"releaseQrCode": base64Image}))
+}
+
+func setPrivacySettingHandler(c *gin.Context) {
+	appid := c.DefaultQuery("appid", "")
+
+	var req privacySettingInfo
+	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Error(err.Error())
+		c.JSON(http.StatusOK, errno.ErrInvalidParam.WithData(err.Error()))
+		return
+	}
+	
+	// 验证 owner_setting 必须至少有一个联系方式
+	hasContact := req.OwnerSetting.ContactPhone != "" || 
+				  req.OwnerSetting.ContactEmail != "" || 
+				  req.OwnerSetting.ContactQQ != "" || 
+				  req.OwnerSetting.ContactWeixin != ""
+	
+	if !hasContact {
+		log.Error("owner_setting must have at least one contact field")
+		c.JSON(http.StatusOK, errno.ErrInvalidParam.WithData("联系方式至少填写一项（手机号、邮箱、QQ或微信）"))
+		return
+	}
+	
+	// 打印请求数据用于调试
+	reqJSON, _ := json.Marshal(req)
+	log.Infof("setPrivacySetting request: %s", string(reqJSON))
+	
+	_, _, err := wx.PostWxJsonWithAuthToken(appid, "/cgi-bin/component/setprivacysetting", "", req)
+	if err != nil {
+		log.Error(err)
+		c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))
+		return
+	}
+	
+	c.JSON(http.StatusOK, errno.OK)
 }
