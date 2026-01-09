@@ -8,6 +8,7 @@ import (
 	"github.com/WeixinCloud/wxcloudrun-wxcomponent/comm/httputils"
 	"github.com/WeixinCloud/wxcloudrun-wxcomponent/comm/log"
 	"github.com/WeixinCloud/wxcloudrun-wxcomponent/comm/wx/cloudbasetoken"
+	"github.com/gin-gonic/gin"
 	jsoniter "github.com/json-iterator/go"
 )
 
@@ -80,7 +81,30 @@ func postWxJson(url string, data interface{}) (*WxCommError, []byte, error) {
 	var wxError WxCommError
 	var body []byte
 	var err error
-	jsonByte, _ := WxJson.Marshal(data)
+	var jsonByte []byte
+	
+	// 判断和处理不同类型的data
+	switch v := data.(type) {
+	case nil:
+		jsonByte = []byte("{}")
+	case gin.H:
+		// gin.H 是具体的类型，不是 map[string]interface{}
+		if len(v) == 0 {
+			jsonByte = []byte("{}")
+		} else {
+			jsonByte, _ = WxJson.Marshal(v)
+		}
+	case map[string]interface{}:
+		// 普通的 map[string]interface{}
+		if len(v) == 0 {
+			jsonByte = []byte("{}")
+		} else {
+			jsonByte, _ = WxJson.Marshal(v)
+		}
+	default:
+		jsonByte, _ = WxJson.Marshal(data)
+	}
+	
 	if body, err = httputils.Post(url, jsonByte, "application/json"); err != nil {
 		return &wxError, body, err
 	}

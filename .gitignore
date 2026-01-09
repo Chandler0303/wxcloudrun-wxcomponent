@@ -3,6 +3,10 @@
 .vscode
 .env
 
+# Air 热重载工具 - 保留配置文件，忽略临时文件
+tmp/
+build-errors.log
+
 client/node_modules
 client/.pnp
 client.pnp.js

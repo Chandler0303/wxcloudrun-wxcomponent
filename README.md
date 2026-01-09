@@ -83,6 +83,21 @@ WX_APPID="wx################"   #微信APPID
 go run main
 ```
 
+#### 热重载开发（推荐）
+项目已配置 [Air](https://github.com/air-verse/air) 热重载工具，修改代码后自动重启服务。
+
+1. 安装 Air：
+```bash
+go install github.com/air-verse/air@latest
+```
+
+2. 启动热重载服务：
+```bash
+air
+```
+
+配置文件：`.air.toml` 已包含项目专用配置，无需额外设置。
+
 #### 判断微信来源
 服务部署在微信云托管时，微信推送消息走内网，无需加解密，判断header中是否有x-wx-source即可。
 
