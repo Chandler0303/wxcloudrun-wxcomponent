@@ -8,6 +8,7 @@ type Authorizer struct {
 	Appid         string    `gorm:"column:appid" json:"appid"`
 	AppType       int       `gorm:"column:apptype" json:"appType"`
 	ServiceType   int       `gorm:"column:servicetype" json:"serviceType"`
+	RegionType    string    `gorm:"column:regiontype" json:"regionType"`
 	NickName      string    `gorm:"column:nickname" json:"nickName"`
 	UserName      string    `gorm:"column:username" json:"userName"`
 	HeadImg       string    `gorm:"column:headimg" json:"headImg"`

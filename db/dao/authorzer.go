@@ -16,7 +16,12 @@ func CreateOrUpdateAuthorizerRecord(record *model.Authorizer) error {
 	var err error
 	cli := db.Get()
 	if err = cli.Table(authorizerTableName).Clauses(clause.OnConflict{
-		UpdateAll: true,
+		Columns:   []clause.Column{{Name: "appid"}}, // 主键或唯一索引
+        DoUpdates: clause.AssignmentColumns([]string{
+            "AppType", "ServiceType", "NickName", "UserName", "HeadImg", "QrcodeUrl",
+            "PrincipalName", "RefreshToken", "FuncInfo", "VerifyInfo", "AuthTime",
+            // 不包含 "RegionType"
+        }),
 	}).Create(record).Error; err != nil {
 		log.Error(err)
 		return err
@@ -30,7 +35,12 @@ func BatchCreateOrUpdateAuthorizerRecord(record *[]model.Authorizer) error {
 
 	cli := db.Get()
 	if err = cli.Table(authorizerTableName).Clauses(clause.OnConflict{
-		UpdateAll: true,
+		Columns:   []clause.Column{{Name: "appid"}}, // 主键或唯一索引
+        DoUpdates: clause.AssignmentColumns([]string{
+            "AppType", "ServiceType", "NickName", "UserName", "HeadImg", "QrcodeUrl",
+            "PrincipalName", "RefreshToken", "FuncInfo", "VerifyInfo", "AuthTime",
+            // 不包含 "RegionType"
+        }),
 	}).Create(record).Error; err != nil {
 		log.Error(err)
 		return err
@@ -79,7 +89,7 @@ func DelAuthorizerRecord(appid string) error {
 }
 
 // GetDevWeAppRecords 获取代开发小程序
-func GetDevWeAppRecords(offset int, limit int, appid string) ([]*model.Authorizer, int64, error) {
+func GetDevWeAppRecords(offset int, limit int, appid string, name string, regionType string) ([]*model.Authorizer, int64, error) {
 	var records = []*model.Authorizer{}
 	cli := db.Get()
 	result := cli.Table(authorizerTableName)
@@ -88,6 +98,18 @@ func GetDevWeAppRecords(offset int, limit int, appid string) ([]*model.Authorize
 	if len(appid) != 0 {
 		result = result.Where("appid = ?", appid)
 	}
+	if len(name) != 0 {
+		result = result.Where("nickName LIKE ?", "%"+name+"%")
+	}
+	if len(regionType) != 0 {
+		result = result.Where("regiontype = ?", regionType)
+	}
 	result = result.Count(&count).Offset(offset).Limit(limit).Find(&records)
 	return records, count, result.Error
+}
+
+// UpdateAuthorizerInfo 更新账号信息（通用）
+func UpdateAuthorizerInfo(appid string, info map[string]interface{}) error {
+	cli := db.Get()
+	return cli.Table(authorizerTableName).Where("appid = ?", appid).Updates(info).Error
 }

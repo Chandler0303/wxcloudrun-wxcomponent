@@ -115,6 +115,7 @@ func newAuthHander(body *[]byte) error {
 		Appid:         record.AuthorizerAppid,
 		AppType:       appinfo.AuthorizerInfo.AppType,
 		ServiceType:   appinfo.AuthorizerInfo.ServiceType.Id,
+		RegionType:  "",
 		NickName:      appinfo.AuthorizerInfo.NickName,
 		UserName:      appinfo.AuthorizerInfo.UserName,
 		HeadImg:       appinfo.AuthorizerInfo.HeadImg,

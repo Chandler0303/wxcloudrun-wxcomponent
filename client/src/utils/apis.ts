@@ -175,3 +175,7 @@ export const setPrivacySettingRequest: IRequestMsg = {
     url: `${HOST}/admin/privacy-setting`, // 设置隐私协议
     method: "post"
 }
+export const updateDevWeAppRequest: IRequestMsg = {
+    url: `${HOST}/admin/update-dev-weapp`, // 更新代开发小程序信息
+    method: "post"
+}

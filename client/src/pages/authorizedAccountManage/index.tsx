@@ -1,12 +1,12 @@
-import { Table, Input, PopConfirm, Dialog, Tabs, MessagePlugin, Tag } from 'tdesign-react';
-import { SearchIcon } from 'tdesign-icons-react'
+import { Table, Input, PopConfirm, Dialog, Tabs, MessagePlugin, Tag, Select } from 'tdesign-react';
+import { SearchIcon, Icon } from 'tdesign-icons-react'
 import { useEffect, useState } from "react";
 import { request } from "../../utils/axios";
 import {
     changeServiceStatusRequest,
     getAuthAccessTokenRequest,
     getAuthorizedAccountRequest,
-    getDevMiniProgramListRequest, getQrcodeRequest
+    getDevMiniProgramListRequest, getQrcodeRequest, updateDevWeAppRequest
 } from "../../utils/apis";
 import { PrimaryTableCol } from "tdesign-react/es/table/type";
 import moment from "moment";
@@ -17,11 +17,13 @@ import {
     tokenColumn,
     tabs,
     serviceStatus,
-    accountStatus, registerType, normalAccountStatus
+    accountStatus, registerType, normalAccountStatus,
+    regionType
 } from './enum'
 import { routes } from "../../config/route";
 import PrivacySettingDialog from './components/PrivacySettingDialog';
 import AuditStatusTag from './components/AuditStatusTag';
+import RegionTypeDialog from './components/RegionTypeDialog';
 
 const { TabPanel } = Tabs
 
@@ -178,6 +180,17 @@ export default function AuthorizedAccountManage() {
         },
         {
             align: 'center',
+            minWidth: 100,
+            colKey: 'regionType',
+            title: '局点',
+            render: ({ row }) => (
+                <a className="a" onClick={() => openRegionTypeDialog(row)}>
+                    {regionType[row.regionType] || '--'} <Icon name="edit-1" />
+                </a>
+            )
+        },
+        {
+            align: 'center',
             width: 200,
             minWidth: 200,
             colKey: 'auditVersion',
@@ -232,6 +245,8 @@ export default function AuthorizedAccountManage() {
     const [currentPage, setCurrentPage] = useState(1)
     const [mpCurrentPage, setMpCurrentPage] = useState(1)
     const [miniProgramAppIdInput, setMiniProgramAppIdInput] = useState<string | number>('')
+    const [miniProgramNameInput, setMiniProgramNameInput] = useState<string | number>('')
+    const [miniProgramRegionType, setMiniProgramRegionType] = useState<string>('')
     const [appIdInput, setAppIdInput] = useState<string | number>('')
     const [visibleTokenModal, setVisibleTokenModal] = useState(false)
     const [tokenData, setTokenData] = useState([{ token: '' }])
@@ -240,7 +255,9 @@ export default function AuthorizedAccountManage() {
     const [qrcode, setQrcode] = useState('')
     const [visiblePrivacyDialog, setVisiblePrivacyDialog] = useState(false)
     const [currentPrivacyAppId, setCurrentPrivacyAppId] = useState('')
-    const [currentPrivacyData, setCurrentPrivacyData] = useState<any>(null)
+    const [visibleRegionDialog, setVisibleRegionDialog] = useState(false)
+    const [currentRegionAppId, setCurrentRegionAppId] = useState('')
+    const [currentRegionType, setCurrentRegionType] = useState('')
 
     useEffect(() => {
         if (selectedTab === tabs[0].value) {
@@ -252,7 +269,7 @@ export default function AuthorizedAccountManage() {
         if (selectedTab === tabs[1].value) {
             getMiniProgramList()
         }
-    }, [mpCurrentPage, selectedTab])
+    }, [mpCurrentPage, selectedTab, miniProgramRegionType])
 
     const createToken = async (appId: string) => {
         const resp = await request({
@@ -291,6 +308,8 @@ export default function AuthorizedAccountManage() {
                 offset: (mpCurrentPage - 1) * pageSize,
                 limit: pageSize,
                 appid: miniProgramAppIdInput,
+                name: miniProgramNameInput,
+                regionType: miniProgramRegionType
             }
         })
         if (resp.code === 0) {
@@ -338,6 +357,16 @@ export default function AuthorizedAccountManage() {
         getMiniProgramList()
     }
 
+    const openRegionTypeDialog = (row: any) => {
+        setCurrentRegionAppId(row.appid)
+        setCurrentRegionType(String(row.regionType || ''))
+        setVisibleRegionDialog(true)
+    }
+
+    const handleRegionTypeSuccess = () => {
+        getMiniProgramList()
+    }
+
     return (
         <div>
             <p className="text">授权帐号介绍</p>
@@ -353,7 +382,7 @@ export default function AuthorizedAccountManage() {
             <Tabs value={selectedTab} placement={'top'} size="medium" theme="normal"
                 onChange={val => setSelectedTab(val)}>
                 <TabPanel value={tabs[0].value} label={tabs[0].label}>
-                    <Input value={appIdInput} onChange={setAppIdInput} style={{ width: '400px', margin: '10px 0' }} placeholder="请输入 AppID，不支持模糊搜索" suffixIcon={<a className="a" onClick={getAccountList}><SearchIcon /></a>} />
+                    <Input value={appIdInput} onChange={setAppIdInput} style={{ width: '250px', margin: '10px 0' }} placeholder="请输入 AppID，不支持模糊搜索" suffixIcon={<a className="a" onClick={getAccountList}><SearchIcon /></a>} />
                     <Table
                         data={accountList}
                         columns={accountColumn}
@@ -374,7 +403,25 @@ export default function AuthorizedAccountManage() {
                     />
                 </TabPanel>
                 <TabPanel value={tabs[1].value} label={tabs[1].label}>
-                    <Input value={miniProgramAppIdInput} onChange={setMiniProgramAppIdInput} style={{ width: '400px', margin: '10px 0' }} placeholder="请输入 AppID，不支持模糊搜索" suffixIcon={<a className="a" onClick={getMiniProgramList}><SearchIcon /></a>} />
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <Input value={miniProgramAppIdInput} onChange={setMiniProgramAppIdInput} style={{ width: '250px', margin: '10px 0' }} placeholder="请输入 AppID，不支持模糊搜索" suffixIcon={<a className="a" onClick={getMiniProgramList}><SearchIcon /></a>} />
+                        <Input style={{ width: '250px', margin: '10px' }} value={miniProgramNameInput} onChange={setMiniProgramNameInput} placeholder="请输入 名称，支持模糊搜索" suffixIcon={<a className="a" onClick={getMiniProgramList}><SearchIcon /></a>} />
+                        <Select
+                            style={{ width: '200px' }}
+                            placeholder="请选择局点类型"
+                            clearable
+                            onChange={(value) => {
+                                setMiniProgramRegionType(value)
+                            }}
+                            value={miniProgramRegionType}
+                        >
+                            {Object.keys(regionType).map((key) => (
+                                <Select.Option key={key} value={key}>
+                                    {regionType[key]}
+                                </Select.Option>
+                            ))}
+                        </Select>
+                    </div>
                     <Table
                         data={miniProgramList}
                         columns={miniProgramColumn}
@@ -415,9 +462,16 @@ export default function AuthorizedAccountManage() {
             <PrivacySettingDialog
                 visible={visiblePrivacyDialog}
                 appid={currentPrivacyAppId}
-                privacyData={currentPrivacyData}
                 onClose={() => setVisiblePrivacyDialog(false)}
                 onSuccess={handlePrivacySuccess}
+            />
+
+            <RegionTypeDialog
+                visible={visibleRegionDialog}
+                appid={currentRegionAppId}
+                initialRegionType={currentRegionType}
+                onClose={() => setVisibleRegionDialog(false)}
+                onSuccess={handleRegionTypeSuccess}
             />
 
         </div>

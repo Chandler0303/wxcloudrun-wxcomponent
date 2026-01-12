@@ -168,6 +168,7 @@ type getVersionInfoResp struct {
 type getDevWeAppListResp struct {
 	Appid         string `json:"appid"`
 	NickName      string `json:"nickName"`
+	RegionType    string `json:"regionType"`
 	FuncInfo      []int  `json:"funcInfo"`
 	QrCodeUrl     string `json:"qrCodeUrl"`
 	ServiceStatus int    `json:"serviceStatus"`
@@ -321,9 +322,11 @@ func getDevWeAppListHandler(c *gin.Context) {
 		return
 	}
 	appid := c.DefaultQuery("appid", "")
+	name := c.DefaultQuery("name", "")
+	regionType := c.DefaultQuery("regionType", "")
 
 	// 获取账号列表
-	records, total, err := dao.GetDevWeAppRecords(offset, count, appid)
+	records, total, err := dao.GetDevWeAppRecords(offset, count, appid, name, regionType)
 	if err != nil {
 		c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))
 		return
@@ -339,6 +342,7 @@ func getDevWeAppListHandler(c *gin.Context) {
 			resp[i].Appid = record.Appid
 			resp[i].NickName = record.NickName
 			resp[i].QrCodeUrl = record.QrcodeUrl
+			resp[i].RegionType = record.RegionType
 
 			// 获取权限集列表
 			strFuncInfoList := strings.Split(record.FuncInfo, "|")
@@ -716,6 +720,34 @@ func setPrivacySettingHandler(c *gin.Context) {
 		log.Error(err)
 		c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))
 		return
+	}
+
+	c.JSON(http.StatusOK, errno.OK)
+}
+
+type updateDevWeAppReq struct {
+	Appid      string `json:"appid" binding:"required"`
+	RegionType string `json:"regionType" binding:"required"`
+}
+
+func updateDevWeAppHandler(c *gin.Context) {
+	var req updateDevWeAppReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusOK, errno.ErrInvalidParam.WithData(err.Error()))
+		return
+	}
+
+	updateMap := make(map[string]interface{})
+	if req.RegionType != "" {
+		updateMap["regiontype"] = req.RegionType
+	}
+
+	if len(updateMap) > 0 {
+		if err := dao.UpdateAuthorizerInfo(req.Appid, updateMap); err != nil {
+			log.Error(err)
+			c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, errno.OK)

@@ -1,5 +1,5 @@
-import {PrimaryTableCol} from "tdesign-react/es/table/type";
-import {copyMessage} from "../../utils/common";
+import { PrimaryTableCol } from "tdesign-react/es/table/type";
+import { copyMessage } from "../../utils/common";
 
 export const officialAccountAuthType: Record<string, string> = {
     "-1": "未认证",
@@ -51,7 +51,7 @@ export const serviceStatus: Record<number, string> = {
     0: '主动暂停服务'
 }
 
-export  const accountStatus: Record<number, string> = {
+export const accountStatus: Record<number, string> = {
     0: '正常',
     1: '已冻结',
     2: '因违规暂停服务',
@@ -71,10 +71,17 @@ export const registerType: Record<number, string> = {
     23: '通过复用商户号转正api注册'
 }
 
-export  const normalAccountStatus: Record<number, string> = {
+export const normalAccountStatus: Record<number, string> = {
     1: '正常',
     14: '已注销',
     16: '已封禁',
     18: '已告警',
     19: '已冻结',
+}
+
+
+export const regionType: Record<number, string> = {
+    1: '华为云',
+    2: '天翼云',
+    99: '其它',
 }
