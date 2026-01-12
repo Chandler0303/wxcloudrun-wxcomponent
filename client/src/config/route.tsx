@@ -3,6 +3,7 @@ import { customRoute } from "../custom/config/route";
 import Home from "../pages/home";
 import AuthorizedAccountManage from "../pages/authorizedAccountManage";
 import AuthPageManage from "../pages/authPageManage";
+import TemplateLibraryManage from "../pages/templateLibraryManage";
 import PasswordManage from "../pages/passwordManage";
 import SystemVersion from "../pages/systemVersion";
 import Login from "../pages/login";
@@ -32,6 +33,11 @@ export const routes: IRoute = {
         label: '授权链接生成器',
         path: '/authPageManage',
         element: <AuthPageManage />
+    },
+    templateLibraryManage: {
+        label: '模板库管理',
+        path: '/templateLibraryManage',
+        element: <TemplateLibraryManage />
     },
     passwordManage: {
         label: 'Secret与密码管理',

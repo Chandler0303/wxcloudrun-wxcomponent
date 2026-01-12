@@ -75,6 +75,10 @@ type templateListResp struct {
 	TemplateList []templateItem `json:"templateList" wx:"template_list"`
 }
 
+type delTemplateReq struct {
+	TemplateId int `json:"templateId" wx:"template_id"`
+}
+
 type templateItem struct {
 	CreateTime             int64          `json:"createTime" wx:"create_time"`
 	UserVersion            string         `json:"userVersion" wx:"user_version"`
@@ -87,6 +91,20 @@ type templateItem struct {
 	AuditScene             int            `json:"auditScene" wx:"audit_scene"`                          // 标准模板的场景标签；普通模板不返回该值
 	AuditStatus            int            `json:"auditStatus" wx:"audit_status"`                        // 标准模板的审核状态；普通模板不返回该值
 	Reason                 string         `json:"reason" wx:"reason"`                                   // 标准模板的审核驳回的原因，；普通模板不返回该值
+}
+
+type templateDraftListResp struct {
+	TemplateDraftItem []templateDraftItem `json:"draftList" wx:"draft_list"`
+}
+type templateDraftItem struct {	
+	CreateTime      int64  `json:"createTime" wx:"create_time"`
+	UserVersion            string         `json:"userVersion" wx:"user_version"`
+	UserDesc               string         `json:"userDesc" wx:"user_desc"`                              // 模板描述，开发者自定义字段
+	DraftId                int            `json:"draftId" wx:"draft_id"`                                // 草稿 id
+	SourceMiniprogramAppid string         `json:"sourceMiniprogramAppid" wx:"source_miniprogram_appid"` // 开发小程序的appid
+	SourceMiniprogram      string         `json:"sourceMiniprogram" wx:"source_miniprogram"`            // 开发小程序的名称
+	CategoryList           []categoryItem `json:"categoryList" wx:"category_list"`                      // [标准模板的类目信息](#category_list标准模板类目信息)；如果是普通模板则值为空的数组
+	Developer              string         `json:"developer" wx:"developer"`                              // 开发者名称
 }
 
 type categoryItem struct {
@@ -185,6 +203,10 @@ type category struct {
 }
 type categoryList struct {
 	CategoryList []category `json:"categoryList" wx:"category_list"`
+}
+
+type addTemplateDraftReq struct {
+	DraftId int `json:"draftId" wx:"draft_id"`
 }
 
 func submitAudit(appid string, req *submitAuditReq) (int, error) {
@@ -475,6 +497,55 @@ func templateListHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, errno.OK.WithData(resp))
 }
 
+func templateDraftListHandler(c *gin.Context) {
+	var resp templateDraftListResp
+	_, body, err := wx.GetWxApiWithComponentToken("/wxa/gettemplatedraftlist", "")
+	if err != nil {
+		c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))
+		return
+	}
+	if err := wx.WxJson.Unmarshal(body, &resp); err != nil {
+		log.Errorf("Unmarshal err, %v", err)
+		c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, errno.OK.WithData(resp))
+}
+
+func addTemplateDraftHandler(c *gin.Context) {
+	var req addTemplateDraftReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Error(err.Error())
+		c.JSON(http.StatusOK, errno.ErrInvalidParam.WithData(err.Error()))
+		return
+	}
+
+	_, _, err := wx.PostWxJsonWithComponentToken("/wxa/addtotemplate", "", req)
+	if err != nil {
+		c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, errno.OK)
+}
+
+func delTemplateHandler(c *gin.Context) {
+	var req delTemplateReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Error(err.Error())
+		c.JSON(http.StatusOK, errno.ErrInvalidParam.WithData(err.Error()))
+		return
+	}
+
+	_, _, err := wx.PostWxJsonWithComponentToken("/wxa/deletetemplate", "", req)
+	if err != nil {
+		c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, errno.OK)
+}
+
+
+
 func revokeAuditHandler(c *gin.Context) {
 	appid := c.DefaultQuery("appid", "")
 	_, _, err := wx.GetWxApiWithAuthToken(appid, "/wxa/undocodeaudit", "")
@@ -644,10 +715,6 @@ func setPrivacySettingHandler(c *gin.Context) {
 		c.JSON(http.StatusOK, errno.ErrInvalidParam.WithData("联系方式至少填写一项（手机号、邮箱、QQ或微信）"))
 		return
 	}
-	
-	// 打印请求数据用于调试
-	reqJSON, _ := json.Marshal(req)
-	log.Infof("setPrivacySetting request: %s", string(reqJSON))
 	
 	_, _, err := wx.PostWxJsonWithAuthToken(appid, "/cgi-bin/component/setprivacysetting", "", req)
 	if err != nil {

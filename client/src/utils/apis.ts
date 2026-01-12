@@ -139,6 +139,18 @@ export const getTemplateListRequest: IRequestMsg = {
     url: `${HOST}/admin/template-list`, // 拉取模板列表
     method: "get"
 }
+export const delTemplateRequest: IRequestMsg = {
+    url: `${HOST}/admin/del-template`, // 删除模板
+    method: "post"
+}
+export const getTemplateDraftListRequest: IRequestMsg = {
+    url: `${HOST}/admin/template-draft-list`, // 拉取模板草稿列表
+    method: "get"
+}
+export const addTemplateDraftRequest: IRequestMsg = {
+    url: `${HOST}/admin/add-template-draft`, // 添加模板到模板库
+    method: "post"
+}
 export const rollbackReleaseRequest: IRequestMsg = {
     url: `${HOST}/admin/rollback-release-version`, // 拉取模板列表
     method: "post"

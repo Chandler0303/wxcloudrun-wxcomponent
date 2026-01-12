@@ -92,14 +92,14 @@ func postWxJson(url string, data interface{}) (*WxCommError, []byte, error) {
 		if len(v) == 0 {
 			jsonByte = []byte("{}")
 		} else {
-			jsonByte, _ = WxJson.Marshal(v)
+			jsonByte, _ = WxJson.Marshal(data)
 		}
 	case map[string]interface{}:
 		// 普通的 map[string]interface{}
 		if len(v) == 0 {
 			jsonByte = []byte("{}")
 		} else {
-			jsonByte, _ = WxJson.Marshal(v)
+			jsonByte, _ = WxJson.Marshal(data)
 		}
 	default:
 		jsonByte, _ = WxJson.Marshal(data)

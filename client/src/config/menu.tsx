@@ -12,7 +12,7 @@ export const menuList: IMenuList = [{
     item: [routes.authPageManage, {
         ...routes.authorizedAccountManage,
         hideItem: [routes.submitAudit, routes.miniProgramVersion],
-    }]
+    }, routes.templateLibraryManage]
 }, {
     label: '开发辅助',
     icon: <Icon.ViewListIcon />,
