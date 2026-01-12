@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Table, Button, Input, MessagePlugin, Dialog, DialogPlugin } from 'tdesign-react';
 import { request } from '../../utils/axios';
 import { getTemplateDraftListRequest, getTemplateListRequest, delTemplateRequest, addTemplateDraftRequest } from '../../utils/apis';
+import moment from 'moment';
 
 export default function TemplateLibraryManage() {
   const [templateList, setTemplateList] = useState([]);
@@ -51,7 +52,7 @@ export default function TemplateLibraryManage() {
   };
 
   const handleDelete = async (row) => {
-    const confirmDia  = DialogPlugin.confirm({
+    const confirmDia = DialogPlugin.confirm({
       header: '确认删除',
       body: `确定要删除模板ID：${row.templateId} 吗？`,
       onConfirm: async () => {
@@ -75,6 +76,7 @@ export default function TemplateLibraryManage() {
     { colKey: 'templateId', title: '模板ID' },
     { colKey: 'userVersion', title: '版本号' },
     { colKey: 'userDesc', title: '模板描述' },
+    { colKey: 'createTime', width: 220, title: '创建时间', cell: ({ row }) => moment(row.createTime).format('YYYY-MM-DD HH:mm:ss') },
     {
       colKey: 'op',
       title: '操作',
@@ -89,7 +91,8 @@ export default function TemplateLibraryManage() {
   const draftColumns = [
     { colKey: 'draftId', title: '草稿ID' },
     { colKey: 'userVersion', title: '版本号' },
-    { colKey: 'userDesc', title: '草稿描述' },
+    { colKey: 'userDesc', width: 220, title: '草稿描述' },
+    { colKey: 'createTime', width: 220, title: '创建时间', cell: ({ row }) => moment(row.createTime).format('YYYY-MM-DD HH:mm:ss') },
     {
       colKey: 'op',
       title: '操作',
@@ -109,7 +112,7 @@ export default function TemplateLibraryManage() {
         </Button>
       </div>
       <Table rowKey="templateId" columns={columns} data={templateList} loading={loading} />
-      <Dialog visible={visibleAdd} header="草稿箱" onClose={() => setVisibleAdd(false)} confirmBtn={null} cancelBtn={null} width={700}>
+      <Dialog visible={visibleAdd} header="草稿箱" onClose={() => setVisibleAdd(false)} confirmBtn={null} cancelBtn={null} width={1000}>
         <Table rowKey="templateId" columns={draftColumns} data={draftList} loading={draftLoading} />
       </Dialog>
     </div>

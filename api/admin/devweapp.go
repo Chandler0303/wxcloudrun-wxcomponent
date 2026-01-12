@@ -96,15 +96,15 @@ type templateItem struct {
 type templateDraftListResp struct {
 	TemplateDraftItem []templateDraftItem `json:"draftList" wx:"draft_list"`
 }
-type templateDraftItem struct {	
-	CreateTime      int64  `json:"createTime" wx:"create_time"`
+type templateDraftItem struct {
+	CreateTime             int64          `json:"createTime" wx:"create_time"`
 	UserVersion            string         `json:"userVersion" wx:"user_version"`
 	UserDesc               string         `json:"userDesc" wx:"user_desc"`                              // 模板描述，开发者自定义字段
 	DraftId                int            `json:"draftId" wx:"draft_id"`                                // 草稿 id
 	SourceMiniprogramAppid string         `json:"sourceMiniprogramAppid" wx:"source_miniprogram_appid"` // 开发小程序的appid
 	SourceMiniprogram      string         `json:"sourceMiniprogram" wx:"source_miniprogram"`            // 开发小程序的名称
 	CategoryList           []categoryItem `json:"categoryList" wx:"category_list"`                      // [标准模板的类目信息](#category_list标准模板类目信息)；如果是普通模板则值为空的数组
-	Developer              string         `json:"developer" wx:"developer"`                              // 开发者名称
+	Developer              string         `json:"developer" wx:"developer"`                             // 开发者名称
 }
 
 type categoryItem struct {
@@ -138,19 +138,19 @@ type privacySetting struct {
 }
 
 type ownerSetting struct {
-	ContactPhone  string `json:"contactPhone" wx:"contact_phone"`
-	ContactEmail  string `json:"contactEmail" wx:"contact_email"`
-	ContactQQ     string `json:"contactQQ" wx:"contact_qq"`
-	ContactWeixin string `json:"contactWeixin" wx:"contact_weixin"`
-	ExtFileMediaID string `json:"extFileMediaID" wx:"ext_file_media_id"`
-	NoticeMethod  string `json:"noticeMethod" wx:"notice_method"`
+	ContactPhone         string `json:"contactPhone" wx:"contact_phone"`
+	ContactEmail         string `json:"contactEmail" wx:"contact_email"`
+	ContactQQ            string `json:"contactQQ" wx:"contact_qq"`
+	ContactWeixin        string `json:"contactWeixin" wx:"contact_weixin"`
+	ExtFileMediaID       string `json:"extFileMediaID" wx:"ext_file_media_id"`
+	NoticeMethod         string `json:"noticeMethod" wx:"notice_method"`
 	StoreExpireTimestamp string `json:"storeExpireTimestamp" wx:"store_expire_timestamp"`
 }
 
 type privacySettingInfo struct {
-	PrivacyList []string          `json:"privacyList" wx:"privacy_list"`
-	SettingList []privacySetting  `json:"settingList" wx:"setting_list"`
-	OwnerSetting ownerSetting   `json:"ownerSetting" wx:"owner_setting"`
+	PrivacyList  []string         `json:"privacyList" wx:"privacy_list"`
+	SettingList  []privacySetting `json:"settingList" wx:"setting_list"`
+	OwnerSetting ownerSetting     `json:"ownerSetting" wx:"owner_setting"`
 }
 
 type expInfo struct {
@@ -165,10 +165,6 @@ type getVersionInfoResp struct {
 	ExpInfo     *expInfo     `json:"expInfo,omitempty" wx:"exp_info"`
 }
 
-type getPrivacySettingInfoResp struct {
-	PrivacySettingInfo *privacySettingInfo `json:"privacySettingInfo,omitempty" wx:"privacy_setting_info"`
-}
-
 type getDevWeAppListResp struct {
 	Appid         string `json:"appid"`
 	NickName      string `json:"nickName"`
@@ -176,7 +172,7 @@ type getDevWeAppListResp struct {
 	QrCodeUrl     string `json:"qrCodeUrl"`
 	ServiceStatus int    `json:"serviceStatus"`
 	getVersionInfoResp
-	getPrivacySettingInfoResp
+	AuditVersion *getLatestAuditStatusResp `json:"auditVersion,omitempty"`
 }
 
 type uploadMediaResp struct {
@@ -264,25 +260,6 @@ func getVersionInfo(appid string, resp *getVersionInfoResp) error {
 	}
 	return nil
 }
-
-func getPrivacySettingInfo(appid string, resp *getPrivacySettingInfoResp) error {
-	_, body, err := wx.PostWxJsonWithAuthToken(appid, "/cgi-bin/component/getprivacysetting", "", gin.H{})
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	
-	// 直接解析到 privacySettingInfo 结构体，因为微信API直接返回字段而不是嵌套
-	var privacySettingInfo privacySettingInfo
-	if err := wx.WxJson.Unmarshal(body, &privacySettingInfo); err != nil {
-		log.Errorf("Unmarshal err, %v", err)
-		return err
-	}
-	
-	resp.PrivacySettingInfo = &privacySettingInfo
-	return nil
-}
-
 
 func getImageResp(resp *http.Response, body []byte) (string, error) {
 	if len(resp.Header["Content-Type"]) > 0 && resp.Header["Content-Type"][0] == "image/jpeg" {
@@ -389,13 +366,14 @@ func getDevWeAppListHandler(c *gin.Context) {
 				resp[i].ExpInfo = versionInfo.ExpInfo
 			}
 
-			// 获取用户隐私设置信息
-			var privacySettingInfo getPrivacySettingInfoResp
-			err = getPrivacySettingInfo(record.Appid, &privacySettingInfo)
+			// 获取最近审核版本信息
+			var auditInfo getLatestAuditStatusResp
+			has, err := getLatestAuditStatus(record.Appid, &auditInfo)
 			if err != nil {
 				log.Error(err)
-			} else {
-				resp[i].PrivacySettingInfo = privacySettingInfo.PrivacySettingInfo
+			}
+			if has {
+				resp[i].AuditVersion = &auditInfo
 			}
 		}(i, record)
 
@@ -543,8 +521,6 @@ func delTemplateHandler(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, errno.OK)
 }
-
-
 
 func revokeAuditHandler(c *gin.Context) {
 	appid := c.DefaultQuery("appid", "")
@@ -694,6 +670,25 @@ func getQRCodeHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, errno.OK.WithData(gin.H{"releaseQrCode": base64Image}))
 }
 
+func getPrivacySettingHandler(c *gin.Context) {
+	appid := c.DefaultQuery("appid", "")
+	_, body, err := wx.PostWxJsonWithAuthToken(appid, "/cgi-bin/component/getprivacysetting", "", gin.H{})
+	if err != nil {
+		log.Error(err)
+		c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))
+		return
+	}
+
+	var privacySettingInfo privacySettingInfo
+	if err := wx.WxJson.Unmarshal(body, &privacySettingInfo); err != nil {
+		log.Errorf("Unmarshal err, %v", err)
+		c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, errno.OK.WithData(privacySettingInfo))
+}
+
 func setPrivacySettingHandler(c *gin.Context) {
 	appid := c.DefaultQuery("appid", "")
 
@@ -703,25 +698,25 @@ func setPrivacySettingHandler(c *gin.Context) {
 		c.JSON(http.StatusOK, errno.ErrInvalidParam.WithData(err.Error()))
 		return
 	}
-	
+
 	// 验证 owner_setting 必须至少有一个联系方式
-	hasContact := req.OwnerSetting.ContactPhone != "" || 
-				  req.OwnerSetting.ContactEmail != "" || 
-				  req.OwnerSetting.ContactQQ != "" || 
-				  req.OwnerSetting.ContactWeixin != ""
-	
+	hasContact := req.OwnerSetting.ContactPhone != "" ||
+		req.OwnerSetting.ContactEmail != "" ||
+		req.OwnerSetting.ContactQQ != "" ||
+		req.OwnerSetting.ContactWeixin != ""
+
 	if !hasContact {
 		log.Error("owner_setting must have at least one contact field")
 		c.JSON(http.StatusOK, errno.ErrInvalidParam.WithData("联系方式至少填写一项（手机号、邮箱、QQ或微信）"))
 		return
 	}
-	
+
 	_, _, err := wx.PostWxJsonWithAuthToken(appid, "/cgi-bin/component/setprivacysetting", "", req)
 	if err != nil {
 		log.Error(err)
 		c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, errno.OK)
 }

@@ -1,16 +1,16 @@
-import {Table, Input, PopConfirm, Dialog, Tabs, MessagePlugin} from 'tdesign-react';
+import { Table, Input, PopConfirm, Dialog, Tabs, MessagePlugin, Tag } from 'tdesign-react';
 import { SearchIcon } from 'tdesign-icons-react'
-import {useEffect, useState} from "react";
-import {request} from "../../utils/axios";
+import { useEffect, useState } from "react";
+import { request } from "../../utils/axios";
 import {
     changeServiceStatusRequest,
     getAuthAccessTokenRequest,
     getAuthorizedAccountRequest,
     getDevMiniProgramListRequest, getQrcodeRequest
 } from "../../utils/apis";
-import {PrimaryTableCol} from "tdesign-react/es/table/type";
+import { PrimaryTableCol } from "tdesign-react/es/table/type";
 import moment from "moment";
-import {copyMessage} from "../../utils/common";
+import { copyMessage } from "../../utils/common";
 import {
     officialAccountAuthType,
     miniProgramAuthType,
@@ -19,8 +19,9 @@ import {
     serviceStatus,
     accountStatus, registerType, normalAccountStatus
 } from './enum'
-import {routes} from "../../config/route";
+import { routes } from "../../config/route";
 import PrivacySettingDialog from './components/PrivacySettingDialog';
+import AuditStatusTag from './components/AuditStatusTag';
 
 const { TabPanel } = Tabs
 
@@ -177,6 +178,24 @@ export default function AuthorizedAccountManage() {
         },
         {
             align: 'center',
+            width: 200,
+            minWidth: 200,
+            colKey: 'auditVersion',
+            title: '审核信息',
+            render: ({ row }) => {
+                if (row.auditVersion) {
+                    return <div style={{ width: '200px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                        <AuditStatusTag auditVersion={row.auditVersion} />
+                        <span>版本：{row.auditVersion.userVersion}</span>
+                        <span>时间：{moment(row.auditVersion.submitAuditTime).format('YYYY-MM-DD HH:mm:ss')}</span>
+                    </div>
+                } else {
+                    return '--'
+                }
+            }
+        },
+        {
+            align: 'center',
             fixed: 'right',
             width: 210,
             minWidth: 210,
@@ -185,7 +204,7 @@ export default function AuthorizedAccountManage() {
             title: '操作',
             render({ row }) {
                 return (
-                    <div style={{ width: '310px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                    <div style={{ width: '250px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
                         {
                             (row.releaseInfo && row.funcInfo.includes(17))
                             &&
@@ -215,7 +234,7 @@ export default function AuthorizedAccountManage() {
     const [miniProgramAppIdInput, setMiniProgramAppIdInput] = useState<string | number>('')
     const [appIdInput, setAppIdInput] = useState<string | number>('')
     const [visibleTokenModal, setVisibleTokenModal] = useState(false)
-    const [tokenData, setTokenData] = useState([{token: ''}])
+    const [tokenData, setTokenData] = useState([{ token: '' }])
     const [selectedTab, setSelectedTab] = useState<string | number>(tabs[0].value)
     const [visibleQrcode, setVisibleQrcode] = useState(false)
     const [qrcode, setQrcode] = useState('')
@@ -311,15 +330,8 @@ export default function AuthorizedAccountManage() {
     }
 
     const openPrivacyPolicy = (appId: string) => {
-        // 从列表中找到对应的小程序数据
-        const miniProgram: any = miniProgramList.find((item: any) => item.appid === appId)
-        if (miniProgram && miniProgram.privacySettingInfo) {
-            setCurrentPrivacyAppId(appId)
-            setCurrentPrivacyData(miniProgram.privacySettingInfo)
-            setVisiblePrivacyDialog(true)
-        } else {
-            MessagePlugin.warning('未获取到隐私信息，请稍后重试')
-        }
+        setCurrentPrivacyAppId(appId)
+        setVisiblePrivacyDialog(true)
     }
 
     const handlePrivacySuccess = () => {
@@ -332,14 +344,14 @@ export default function AuthorizedAccountManage() {
             <div className="normal_flex">
                 <div className="blue_circle" />
                 <p className="desc"
-                   style={{margin: 0}}>授权帐号指的是获得公众号或者小程序管理员授权的帐号，服务商可为授权帐号提供代开发、代运营等服务。</p>
+                    style={{ margin: 0 }}>授权帐号指的是获得公众号或者小程序管理员授权的帐号，服务商可为授权帐号提供代开发、代运营等服务。</p>
             </div>
             <div className="normal_flex">
                 <div className="blue_circle" />
                 <p className="desc">代开发小程序指的是小程序管理员将权限集id为18的"小程序开发与数据分析"权限授权给该第三方，服务商可代小程序提交代码、发布上线等</p>
             </div>
             <Tabs value={selectedTab} placement={'top'} size="medium" theme="normal"
-                  onChange={val => setSelectedTab(val)}>
+                onChange={val => setSelectedTab(val)}>
                 <TabPanel value={tabs[0].value} label={tabs[0].label}>
                     <Input value={appIdInput} onChange={setAppIdInput} style={{ width: '400px', margin: '10px 0' }} placeholder="请输入 AppID，不支持模糊搜索" suffixIcon={<a className="a" onClick={getAccountList}><SearchIcon /></a>} />
                     <Table
@@ -396,7 +408,7 @@ export default function AuthorizedAccountManage() {
 
             <Dialog header="获取小程序码" visible={visibleQrcode} footer={null} onClose={() => setVisibleQrcode(false)}>
                 <div style={{ textAlign: 'center' }}>
-                    <img src={qrcode} style={{width: '200px', height: '200px'}} alt="" />
+                    <img src={qrcode} style={{ width: '200px', height: '200px' }} alt="" />
                 </div>
             </Dialog>
 

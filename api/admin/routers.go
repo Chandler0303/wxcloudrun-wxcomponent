@@ -51,6 +51,7 @@ func Routers(e *gin.RouterGroup) {
 	g.GET("/page-list", getPageListHandler)
 	g.GET("/category", getCategoryHandler)
 	g.GET("/qrcode", getQRCodeHandler)
+	g.GET("/privacy-setting", getPrivacySettingHandler)
 	g.POST("/privacy-setting", setPrivacySettingHandler)
 
 	// 设置

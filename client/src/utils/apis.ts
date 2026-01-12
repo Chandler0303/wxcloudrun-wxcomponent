@@ -5,7 +5,7 @@ type IRequestMsg = {
     method: "get" | "post" | "delete" | "put"
 }
 
-export const getTicketRequest : IRequestMsg = {
+export const getTicketRequest: IRequestMsg = {
     url: `${HOST}/admin/ticket`,
     method: "get"
 }
@@ -166,6 +166,10 @@ export const getCategoryRequest: IRequestMsg = {
 export const uploadFileRequest: IRequestMsg = {
     url: `${HOST}/admin/upload-media`, // 修改服务状态
     method: "post"
+}
+export const getPrivacySettingRequest: IRequestMsg = {
+    url: `${HOST}/admin/privacy-setting`, // 获取隐私协议
+    method: "get"
 }
 export const setPrivacySettingRequest: IRequestMsg = {
     url: `${HOST}/admin/privacy-setting`, // 设置隐私协议

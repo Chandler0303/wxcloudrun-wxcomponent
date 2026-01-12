@@ -1,7 +1,7 @@
 import { Dialog, Form, Input, Button, MessagePlugin } from 'tdesign-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { request } from '../../../utils/axios';
-import { setPrivacySettingRequest } from '../../../utils/apis';
+import { getPrivacySettingRequest, setPrivacySettingRequest } from '../../../utils/apis';
 
 const { FormItem } = Form;
 
@@ -29,7 +29,6 @@ interface PrivacySettingInfo {
 interface PrivacySettingDialogProps {
     visible: boolean;
     appid: string;
-    privacyData?: PrivacySettingInfo;
     onClose: () => void;
     onSuccess?: () => void;
 }
@@ -54,37 +53,53 @@ const privacyNameMap: Record<string, string> = {
 export default function PrivacySettingDialog({
     visible,
     appid,
-    privacyData,
     onClose,
     onSuccess
 }: PrivacySettingDialogProps) {
     const [formData, setFormData] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(false);
+    const privacyData = useRef<PrivacySettingInfo | null>(null);
 
     useEffect(() => {
-        if (privacyData && visible) {
-            // 初始化表单数据
-            const initialData: Record<string, string> = {};
-            privacyData.settingList.forEach(item => {
-                initialData[item.privacyKey] = item.privacyText || '';
-            });
-            
-            // 初始化 owner 数据
-            if (privacyData.ownerSetting) {
-                Object.keys(privacyData.ownerSetting).forEach(key => {
-                    initialData[key] = (privacyData.ownerSetting as any)[key] || '';
-                });
-            }
-            console.log('初始化表单数据:', formData);
-            setFormData(initialData);
+        if (visible) {
+            getPrivacySetting();
         }
-    }, [privacyData, visible]);
+    }, [visible]);
 
+    const getPrivacySetting = async () => {
+        try {
+            const resp = await request({
+                request: getPrivacySettingRequest,
+                data: {
+                    appid
+                }
+            });
+            if (resp.code === 0) {
+                privacyData.current = resp.data as PrivacySettingInfo;
+                // 初始化表单数据
+                const initialData: Record<string, string> = {};
+                privacyData.current?.settingList.forEach(item => {
+                    initialData[item.privacyKey] = item.privacyText || '';
+                });
+
+                // 初始化 owner 数据
+                if (privacyData.current?.ownerSetting) {
+                    Object.keys(privacyData.current.ownerSetting).forEach(key => {
+                        initialData[key] = ((privacyData.current as PrivacySettingInfo).ownerSetting as any)[key] || '';
+                    });
+                }
+                console.log('初始化表单数据:', formData);
+                setFormData(initialData);
+            }
+        } catch (error) {
+            console.error('获取隐私设置失败:', error);
+        }
+    };
     const handleSubmit = async () => {
         // 验证至少填写一个联系方式
-        const hasContact = formData.contactPhone || formData.contactEmail || 
-                          formData.contactQQ || formData.contactWeixin;
-        
+        const hasContact = formData.contactPhone || formData.contactEmail ||
+            formData.contactQQ || formData.contactWeixin;
+
         if (!hasContact) {
             MessagePlugin.warning('请至少填写一个联系方式（手机号、邮箱、QQ或微信）');
             return;
@@ -104,8 +119,8 @@ export default function PrivacySettingDialog({
                     method: setPrivacySettingRequest.method
                 },
                 data: {
-                    privacyList: privacyData?.privacyList || [],
-                    settingList: privacyData?.settingList.map(item => ({
+                    privacyList: privacyData?.current?.privacyList || [],
+                    settingList: privacyData?.current?.settingList.map(item => ({
                         privacyKey: item.privacyKey,
                         privacyText: formData[item.privacyKey] || ''
                     })) || [],
@@ -151,7 +166,7 @@ export default function PrivacySettingDialog({
             destroyOnClose
         >
             <div style={{ maxHeight: '60vh', overflowY: 'auto', padding: '20px 0' }}>
-                {privacyData && privacyData.privacyList.length > 0 ? (
+                {privacyData.current && privacyData.current.privacyList.length > 0 ? (
                     <>
                         <div style={{ marginBottom: '20px', color: '#666', fontSize: '14px' }}>
                             <p style={{ marginBottom: '8px' }}>
@@ -163,7 +178,7 @@ export default function PrivacySettingDialog({
                         </div>
 
                         <Form labelWidth={150}>
-                            {privacyData.privacyList.map(key => (
+                            {privacyData.current?.privacyList.map(key => (
                                 <FormItem
                                     key={key}
                                     label={`${privacyNameMap[key] || key}`}
@@ -235,12 +250,12 @@ export default function PrivacySettingDialog({
                             </FormItem>
                         </Form>
 
-                        {privacyData.settingList.length > 0 && (
+                        {privacyData.current?.settingList.length > 0 && (
                             <div style={{ marginTop: '20px', padding: '12px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
                                 <p style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px' }}>
                                     当前隐私接口配置：
                                 </p>
-                                {privacyData.settingList.map(item => (
+                                {privacyData.current?.settingList.map(item => (
                                     <div key={item.privacyKey} style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
                                         • {privacyNameMap[item.privacyKey] || item.privacyKey}: {item.privacyText || '未填写'}
                                     </div>
@@ -248,29 +263,29 @@ export default function PrivacySettingDialog({
                             </div>
                         )}
 
-                        {privacyData.ownerSetting && (
+                        {privacyData.current?.ownerSetting && (
                             <div style={{ marginTop: '20px', padding: '12px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
                                 <p style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px' }}>
                                     当前联系方式配置：
                                 </p>
                                 <div style={{ fontSize: '12px', color: '#666' }}>
-                                    {privacyData.ownerSetting.contactPhone && (
-                                        <div style={{ marginBottom: '4px' }}>• 联系手机号: {privacyData.ownerSetting.contactPhone}</div>
+                                    {privacyData.current?.ownerSetting.contactPhone && (
+                                        <div style={{ marginBottom: '4px' }}>• 联系手机号: {privacyData.current?.ownerSetting.contactPhone}</div>
                                     )}
-                                    {privacyData.ownerSetting.contactEmail && (
-                                        <div style={{ marginBottom: '4px' }}>• 联系邮箱: {privacyData.ownerSetting.contactEmail}</div>
+                                    {privacyData.current?.ownerSetting.contactEmail && (
+                                        <div style={{ marginBottom: '4px' }}>• 联系邮箱: {privacyData.current?.ownerSetting.contactEmail}</div>
                                     )}
-                                    {privacyData.ownerSetting.contactQQ && (
-                                        <div style={{ marginBottom: '4px' }}>• 联系QQ: {privacyData.ownerSetting.contactQQ}</div>
+                                    {privacyData.current?.ownerSetting.contactQQ && (
+                                        <div style={{ marginBottom: '4px' }}>• 联系QQ: {privacyData.current?.ownerSetting.contactQQ}</div>
                                     )}
-                                    {privacyData.ownerSetting.contactWeixin && (
-                                        <div style={{ marginBottom: '4px' }}>• 联系微信: {privacyData.ownerSetting.contactWeixin}</div>
+                                    {privacyData.current?.ownerSetting.contactWeixin && (
+                                        <div style={{ marginBottom: '4px' }}>• 联系微信: {privacyData.current?.ownerSetting.contactWeixin}</div>
                                     )}
-                                    {privacyData.ownerSetting.noticeMethod && (
-                                        <div style={{ marginBottom: '4px' }}>• 通知方式: {privacyData.ownerSetting.noticeMethod}</div>
+                                    {privacyData.current?.ownerSetting.noticeMethod && (
+                                        <div style={{ marginBottom: '4px' }}>• 通知方式: {privacyData.current?.ownerSetting.noticeMethod}</div>
                                     )}
-                                    {privacyData.ownerSetting.storeExpireTimestamp && (
-                                        <div style={{ marginBottom: '4px' }}>• 存储期限: {privacyData.ownerSetting.storeExpireTimestamp}</div>
+                                    {privacyData.current?.ownerSetting.storeExpireTimestamp && (
+                                        <div style={{ marginBottom: '4px' }}>• 存储期限: {privacyData.current?.ownerSetting.storeExpireTimestamp}</div>
                                     )}
                                 </div>
                             </div>
