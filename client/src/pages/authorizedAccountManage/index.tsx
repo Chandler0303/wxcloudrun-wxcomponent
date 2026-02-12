@@ -22,6 +22,7 @@ import {
 } from './enum'
 import { routes } from "../../config/route";
 import PrivacySettingDialog from './components/PrivacySettingDialog';
+import DomainSettingDialog from './components/DomainSettingDialog';
 import AuditStatusTag from './components/AuditStatusTag';
 import RegionTypeDialog from './components/RegionTypeDialog';
 
@@ -167,7 +168,7 @@ export default function AuthorizedAccountManage() {
         {
             align: 'center',
             minWidth: 120,
-            colKey: 'releaseInfo',
+            colKey: 'releaseVersion',
             title: '生产版本',
             render: ({ row }) => row.releaseInfo ? row.releaseInfo.releaseVersion : '--'
         },
@@ -230,6 +231,7 @@ export default function AuthorizedAccountManage() {
                         }
                         <a className="a" href={`#${routes.miniProgramVersion.path}?appId=${row.appid}`}>版本管理</a>
                         <a className="a" style={{ marginLeft: '5px' }} onClick={() => openPrivacyPolicy(row.appid)}>完善用户协议</a>
+                        <a className="a" style={{ marginLeft: '5px' }} onClick={() => openDomainSetting(row.appid)}>服务器域名</a>
                     </div>
                 );
             },
@@ -258,6 +260,8 @@ export default function AuthorizedAccountManage() {
     const [visibleRegionDialog, setVisibleRegionDialog] = useState(false)
     const [currentRegionAppId, setCurrentRegionAppId] = useState('')
     const [currentRegionType, setCurrentRegionType] = useState('')
+    const [visibleDomainDialog, setVisibleDomainDialog] = useState(false)
+    const [currentDomainAppId, setCurrentDomainAppId] = useState('')
 
     useEffect(() => {
         if (selectedTab === tabs[0].value) {
@@ -367,6 +371,15 @@ export default function AuthorizedAccountManage() {
         getMiniProgramList()
     }
 
+    const openDomainSetting = (appId: string) => {
+        setCurrentDomainAppId(appId)
+        setVisibleDomainDialog(true)
+    }
+
+    const handleDomainSuccess = () => {
+        getMiniProgramList()
+    }
+
     return (
         <div>
             <p className="text">授权帐号介绍</p>
@@ -472,6 +485,13 @@ export default function AuthorizedAccountManage() {
                 initialRegionType={currentRegionType}
                 onClose={() => setVisibleRegionDialog(false)}
                 onSuccess={handleRegionTypeSuccess}
+            />
+
+            <DomainSettingDialog
+                visible={visibleDomainDialog}
+                appid={currentDomainAppId}
+                onClose={() => setVisibleDomainDialog(false)}
+                onSuccess={handleDomainSuccess}
             />
 
         </div>

@@ -147,10 +147,33 @@ type ownerSetting struct {
 	StoreExpireTimestamp string `json:"storeExpireTimestamp" wx:"store_expire_timestamp"`
 }
 
+// PrivacyDescItem 隐私项说明，用于接口返回与 SET 请求
+type PrivacyDescItem struct {
+	PrivacyKey  string `json:"privacyKey" wx:"privacy_key"`
+	PrivacyDesc string `json:"privacyDesc" wx:"privacy_desc"`
+}
+
+// privacyDescListResp 返回给前端的 privacyDesc 结构，SET 时也按此结构发给微信
+type privacyDescListResp struct {
+	PrivacyDescList []PrivacyDescItem `json:"privacyDescList" wx:"privacy_desc_list"`
+}
+
+// privacySettingInfoRaw 用于解析微信返回（privacy_desc 可能为 map 或带 list 的对象）
+type privacySettingInfoRaw struct {
+	PrivacyList         []string         `json:"privacyList" wx:"privacy_list"`
+	SettingList         []privacySetting `json:"settingList" wx:"setting_list"`
+	OwnerSetting        ownerSetting     `json:"ownerSetting" wx:"owner_setting"`
+	PrivacyDesc         map[string]interface{} `json:"privacyDesc" wx:"privacy_desc"`
+	SdkPrivacyInfoList  []privacySetting `json:"sdkPrivacyInfoList" wx:"sdk_privacy_info_list"`
+}
+
+// privacySettingInfo 用于 SET 请求与统一响应
 type privacySettingInfo struct {
-	PrivacyList  []string         `json:"privacyList" wx:"privacy_list"`
-	SettingList  []privacySetting `json:"settingList" wx:"setting_list"`
-	OwnerSetting ownerSetting     `json:"ownerSetting" wx:"owner_setting"`
+	PrivacyList         []string         `json:"privacyList" wx:"privacy_list"`
+	SettingList         []privacySetting `json:"settingList" wx:"setting_list"`
+	OwnerSetting        ownerSetting     `json:"ownerSetting" wx:"owner_setting"`
+	PrivacyDesc         privacyDescListResp `json:"privacyDesc" wx:"privacy_desc"`
+	SdkPrivacyInfoList  []privacySetting `json:"sdkPrivacyInfoList" wx:"sdk_privacy_info_list"`
 }
 
 type expInfo struct {
@@ -204,6 +227,34 @@ type categoryList struct {
 
 type addTemplateDraftReq struct {
 	DraftId int `json:"draftId" wx:"draft_id"`
+}
+
+// modifyDomainReq 配置小程序服务器域名 请求体（action=get 时可不传域名数组）
+type modifyDomainReq struct {
+	Action           string   `json:"action" wx:"action"`
+	RequestDomain    []string `json:"requestdomain,omitempty" wx:"requestdomain"`
+	WsRequestDomain  []string `json:"wsrequestdomain,omitempty" wx:"wsrequestdomain"`
+	UploadDomain     []string `json:"uploaddomain,omitempty" wx:"uploaddomain"`
+	DownloadDomain   []string `json:"downloaddomain,omitempty" wx:"downloaddomain"`
+	UdpDomain        []string `json:"udpdomain,omitempty" wx:"udpdomain"`
+	TcpDomain        []string `json:"tcpdomain,omitempty" wx:"tcpdomain"`
+}
+
+// modifyDomainResp 配置小程序服务器域名 返回（wx 用于解析微信响应，json 用于返回前端）
+type modifyDomainResp struct {
+	RequestDomain          []string `json:"requestDomain" wx:"requestdomain"`
+	WsRequestDomain        []string `json:"wsRequestDomain" wx:"wsrequestdomain"`
+	UploadDomain           []string `json:"uploadDomain" wx:"uploaddomain"`
+	DownloadDomain         []string `json:"downloadDomain" wx:"downloaddomain"`
+	UdpDomain              []string `json:"udpDomain" wx:"udpdomain"`
+	TcpDomain              []string `json:"tcpDomain" wx:"tcpdomain"`
+	InvalidRequestDomain   []string `json:"invalidRequestDomain" wx:"invalid_requestdomain"`
+	InvalidWsRequestDomain []string `json:"invalidWsRequestDomain" wx:"invalid_wsrequestdomain"`
+	InvalidUploadDomain    []string `json:"invalidUploadDomain" wx:"invalid_uploaddomain"`
+	InvalidDownloadDomain  []string `json:"invalidDownloadDomain" wx:"invalid_downloaddomain"`
+	InvalidUdpDomain       []string `json:"invalidUdpDomain" wx:"invalid_udpdomain"`
+	InvalidTcpDomain       []string `json:"invalidTcpDomain" wx:"invalid_tcpdomain"`
+	NoIcpDomain            []string `json:"noIcpDomain" wx:"no_icp_domain"`
 }
 
 func submitAudit(appid string, req *submitAuditReq) (int, error) {
@@ -674,6 +725,74 @@ func getQRCodeHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, errno.OK.WithData(gin.H{"releaseQrCode": base64Image}))
 }
 
+// snakeToCamel 将下划线命名转为驼峰，如 user_info -> userInfo
+func snakeToCamel(s string) string {
+	parts := strings.Split(s, "_")
+	for i := 1; i < len(parts); i++ {
+		if len(parts[i]) > 0 {
+			parts[i] = strings.ToUpper(parts[i][:1]) + parts[i][1:]
+		}
+	}
+	return strings.Join(parts, "")
+}
+
+// buildPrivacyDescList 将微信返回的 privacy_desc（map 或带 privacy_desc_list 的对象）转为 []PrivacyDescItem
+func buildPrivacyDescList(m map[string]interface{}) []PrivacyDescItem {
+	if len(m) == 0 {
+		return nil
+	}
+	// 若为 { "privacy_desc_list": [ {...} ] } 则直接解析列表
+	if list, ok := m["privacy_desc_list"]; ok {
+		if arr, ok := list.([]interface{}); ok {
+			out := make([]PrivacyDescItem, 0, len(arr))
+			for _, it := range arr {
+				if item, ok := it.(map[string]interface{}); ok {
+					out = append(out, PrivacyDescItem{
+						PrivacyKey:  getStr(item, "privacy_key", "privacyKey"),
+						PrivacyDesc: getStr(item, "privacy_desc", "privacyDesc"),
+					})
+				}
+			}
+			return out
+		}
+	}
+	// 否则按 key -> value 构建列表（key 转为驼峰）
+	out := make([]PrivacyDescItem, 0, len(m))
+	for k, v := range m {
+		out = append(out, PrivacyDescItem{
+			PrivacyKey:  snakeToCamel(k),
+			PrivacyDesc: privacyDescValueToString(v),
+		})
+	}
+	return out
+}
+
+func getStr(m map[string]interface{}, snake, camel string) string {
+	if s, ok := m[snake].(string); ok {
+		return s
+	}
+	if s, ok := m[camel].(string); ok {
+		return s
+	}
+	return ""
+}
+
+func privacyDescValueToString(v interface{}) string {
+	switch val := v.(type) {
+	case string:
+		return val
+	case []interface{}:
+		var parts []string
+		for _, e := range val {
+			if s, ok := e.(string); ok {
+				parts = append(parts, s)
+			}
+		}
+		return strings.Join(parts, " ")
+	}
+	return ""
+}
+
 func getPrivacySettingHandler(c *gin.Context) {
 	appid := c.DefaultQuery("appid", "")
 	_, body, err := wx.PostWxJsonWithAuthToken(appid, "/cgi-bin/component/getprivacysetting", "", gin.H{})
@@ -683,14 +802,23 @@ func getPrivacySettingHandler(c *gin.Context) {
 		return
 	}
 
-	var privacySettingInfo privacySettingInfo
-	if err := wx.WxJson.Unmarshal(body, &privacySettingInfo); err != nil {
+	var raw privacySettingInfoRaw
+	if err := wx.WxJson.Unmarshal(body, &raw); err != nil {
 		log.Errorf("Unmarshal err, %v", err)
 		c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))
 		return
 	}
 
-	c.JSON(http.StatusOK, errno.OK.WithData(privacySettingInfo))
+	resp := privacySettingInfo{
+		PrivacyList:        raw.PrivacyList,
+		SettingList:        raw.SettingList,
+		OwnerSetting:       raw.OwnerSetting,
+		SdkPrivacyInfoList: raw.SdkPrivacyInfoList,
+		PrivacyDesc: privacyDescListResp{
+			PrivacyDescList: buildPrivacyDescList(raw.PrivacyDesc),
+		},
+	}
+	c.JSON(http.StatusOK, errno.OK.WithData(resp))
 }
 
 func setPrivacySettingHandler(c *gin.Context) {
@@ -723,6 +851,59 @@ func setPrivacySettingHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, errno.OK)
+}
+
+func getModifyDomainHandler(c *gin.Context) {
+	appid := c.DefaultQuery("appid", "")
+	reqBody := modifyDomainReq{Action: "get"}
+	_, body, err := wx.PostWxJsonWithAuthToken(appid, "/wxa/modify_domain_directly", "", reqBody)
+	if err != nil {
+		log.Error(err)
+		c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))
+		return
+	}
+
+	var resp modifyDomainResp
+	if err := wx.WxJson.Unmarshal(body, &resp); err != nil {
+		log.Errorf("Unmarshal err, %v", err)
+		c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, errno.OK.WithData(resp))
+}
+
+func setModifyDomainHandler(c *gin.Context) {
+	appid := c.DefaultQuery("appid", "")
+
+	var req modifyDomainReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Error(err.Error())
+		c.JSON(http.StatusOK, errno.ErrInvalidParam.WithData(err.Error()))
+		return
+	}
+
+	if req.Action == "" {
+		req.Action = "set"
+	}
+	if req.Action != "get" && req.Action != "set" {
+		c.JSON(http.StatusOK, errno.ErrInvalidParam.WithData("action 只能是 get 或 set"))
+		return
+	}
+
+	_, body, err := wx.PostWxJsonWithAuthToken(appid, "/wxa/modify_domain_directly", "", req)
+	if err != nil {
+		log.Error(err)
+		c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))
+		return
+	}
+
+	var resp modifyDomainResp
+	if err := wx.WxJson.Unmarshal(body, &resp); err != nil {
+		log.Errorf("Unmarshal err, %v", err)
+		c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, errno.OK.WithData(resp))
 }
 
 type updateDevWeAppReq struct {

@@ -20,10 +20,21 @@ interface OwnerSetting {
     storeExpireTimestamp: string;
 }
 
+/** 接口返回的隐私项说明项 */
+interface PrivacyDescItem {
+    privacyKey: string;
+    privacyDesc: string;
+}
+
 interface PrivacySettingInfo {
     privacyList: string[];
     settingList: PrivacySetting[];
     ownerSetting?: OwnerSetting;
+    /** 隐私项说明列表，用于展示名称（替代原 privacyNameMap） */
+    privacyDesc?: {
+        privacyDescList: PrivacyDescItem[];
+    };
+    sdkPrivacyInfoList: PrivacySetting[];
 }
 
 interface PrivacySettingDialogProps {
@@ -33,22 +44,15 @@ interface PrivacySettingDialogProps {
     onSuccess?: () => void;
 }
 
-// 隐私接口中文名称映射
-const privacyNameMap: Record<string, string> = {
-    'PhoneNumber': '手机号',
-    'Location': '位置信息',
-    'Album': '相册',
-    'Camera': '摄像头',
-    'Record': '麦克风',
-    'UserInfo': '用户信息',
-    'Address': '通讯地址',
-    'Invoice': '发票',
-    'Run': '运动数据',
-    'Bluetooth': '蓝牙',
-    'Clipboard': '剪贴板',
-    'Calendar': '日历',
-    'Email': '邮箱',
-};
+/** 从接口返回的 privacyDesc.privacyDescList 生成 privacyKey -> 展示名 的映射 */
+function buildPrivacyNameMap(data: PrivacySettingInfo | null): Record<string, string> {
+    const list = data?.privacyDesc?.privacyDescList;
+    if (!list?.length) return {};
+    return list.reduce<Record<string, string>>((acc, item) => {
+        acc[item.privacyKey] = item.privacyDesc;
+        return acc;
+    }, {});
+}
 
 export default function PrivacySettingDialog({
     visible,
@@ -59,6 +63,7 @@ export default function PrivacySettingDialog({
     const [formData, setFormData] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(false);
     const privacyData = useRef<PrivacySettingInfo | null>(null);
+    const privacyNameMap = buildPrivacyNameMap(privacyData.current);
 
     useEffect(() => {
         if (visible) {
@@ -113,13 +118,28 @@ export default function PrivacySettingDialog({
 
         setLoading(true);
         try {
+            console.log('privacyData.current', {
+                privacyList: privacyData?.current?.settingList || [],
+                settingList: privacyData?.current?.settingList.map(item => ({
+                    privacyKey: item.privacyKey,
+                    privacyText: formData[item.privacyKey] || ''
+                })) || [],
+                ownerSetting: {
+                    contactPhone: formData.contactPhone,
+                    contactEmail: formData.contactEmail,
+                    contactQQ: formData.contactQQ,
+                    contactWeixin: formData.contactWeixin,
+                    extFileMediaID: formData.extFileMediaID,
+                    noticeMethod: formData.noticeMethod,
+                    storeExpireTimestamp: formData.storeExpireTimestamp
+                }
+            });
             const resp = await request({
                 request: {
                     url: `${setPrivacySettingRequest.url}?appid=${appid}`,
                     method: setPrivacySettingRequest.method
                 },
                 data: {
-                    privacyList: privacyData?.current?.privacyList || [],
                     settingList: privacyData?.current?.settingList.map(item => ({
                         privacyKey: item.privacyKey,
                         privacyText: formData[item.privacyKey] || ''
@@ -166,7 +186,7 @@ export default function PrivacySettingDialog({
             destroyOnClose
         >
             <div style={{ maxHeight: '60vh', overflowY: 'auto', padding: '20px 0' }}>
-                {privacyData.current && privacyData.current.privacyList.length > 0 ? (
+                {privacyData.current && privacyData.current.settingList.length > 0 ? (
                     <>
                         <div style={{ marginBottom: '20px', color: '#666', fontSize: '14px' }}>
                             <p style={{ marginBottom: '8px' }}>
@@ -177,20 +197,20 @@ export default function PrivacySettingDialog({
                             </p>
                         </div>
 
-                        <Form labelWidth={150}>
-                            {privacyData.current?.privacyList.map(key => (
+                        <Form labelWidth={200}>
+                            {privacyData.current?.settingList.map((item: PrivacySetting) => (
                                 <FormItem
-                                    key={key}
-                                    label={`${privacyNameMap[key] || key}`}
-                                    name={key}
-                                    initialData={formData[key]}
-                                    help={`接口标识：${key}`}
+                                    key={item.privacyKey}
+                                    label={`${privacyNameMap[item.privacyKey] || item.privacyKey}`}
+                                    name={item.privacyKey}
+                                    initialData={formData[item.privacyKey]}
+                                    help={`接口标识：${item.privacyKey}`}
                                 >
                                     <Input
-                                        value={formData[key]}
-                                        onChange={(value) => handleInputChange(key, String(value))}
-                                        placeholder={`请输入${privacyNameMap[key] || key}的使用说明`}
-                                        maxLength={200}
+                                        value={formData[item.privacyKey]}
+                                        onChange={(value) => handleInputChange(item.privacyKey, String(value))}
+                                        placeholder={`请输入${privacyNameMap[item.privacyKey] || item.privacyKey}的使用说明`}
+                                        maxlength={200}
                                     />
                                 </FormItem>
                             ))}

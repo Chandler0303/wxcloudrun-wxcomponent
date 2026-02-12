@@ -53,6 +53,8 @@ func Routers(e *gin.RouterGroup) {
 	g.GET("/qrcode", getQRCodeHandler)
 	g.GET("/privacy-setting", getPrivacySettingHandler)
 	g.POST("/privacy-setting", setPrivacySettingHandler)
+	g.GET("/modify-domain", getModifyDomainHandler)
+	g.POST("/modify-domain", setModifyDomainHandler)
 	g.POST("/update-dev-weapp", updateDevWeAppHandler)
 
 	// 设置

@@ -179,3 +179,11 @@ export const updateDevWeAppRequest: IRequestMsg = {
     url: `${HOST}/admin/update-dev-weapp`, // 更新代开发小程序信息
     method: "post"
 }
+export const getModifyDomainRequest: IRequestMsg = {
+    url: `${HOST}/admin/modify-domain`, // 获取小程序服务器域名配置
+    method: "get"
+}
+export const setModifyDomainRequest: IRequestMsg = {
+    url: `${HOST}/admin/modify-domain`, // 配置小程序服务器域名
+    method: "post"
+}
