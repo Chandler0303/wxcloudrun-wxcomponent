@@ -240,6 +240,17 @@ type modifyDomainReq struct {
 	TcpDomain        []string `json:"tcpdomain,omitempty" wx:"tcpdomain"`
 }
 
+// modifyWebviewDomainReq 配置小程序业务域名 请求体
+type modifyWebviewDomainReq struct {
+	Action        string   `json:"action" wx:"action"`
+	WebviewDomain []string `json:"webviewdomain,omitempty" wx:"webviewdomain"`
+}
+
+// modifyWebviewDomainResp 配置小程序业务域名 返回
+type modifyWebviewDomainResp struct {
+	WebviewDomain        []string `json:"webviewDomain" wx:"webviewdomain"`
+}
+
 // modifyDomainResp 配置小程序服务器域名 返回（wx 用于解析微信响应，json 用于返回前端）
 type modifyDomainResp struct {
 	RequestDomain          []string `json:"requestDomain" wx:"requestdomain"`
@@ -898,6 +909,71 @@ func setModifyDomainHandler(c *gin.Context) {
 	}
 
 	var resp modifyDomainResp
+	if err := wx.WxJson.Unmarshal(body, &resp); err != nil {
+		log.Errorf("Unmarshal err, %v", err)
+		c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, errno.OK.WithData(resp))
+}
+
+// getModifyWebviewDomainHandler 获取小程序业务域名配置
+func getModifyWebviewDomainHandler(c *gin.Context) {
+	appid := c.DefaultQuery("appid", "")
+	reqBody := modifyWebviewDomainReq{Action: "get"}
+	_, body, err := wx.PostWxJsonWithAuthToken(appid, "/wxa/setwebviewdomain_directly", "", reqBody)
+	if err != nil {
+		log.Error(err)
+		c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))
+		return
+	}
+	if body == nil {
+		body = []byte("{}")
+	}
+
+	var resp modifyWebviewDomainResp
+	if err := wx.WxJson.Unmarshal(body, &resp); err != nil {
+		log.Errorf("Unmarshal err, %v", err)
+		c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, errno.OK.WithData(resp))
+}
+
+// setModifyWebviewDomainHandler 配置小程序业务域名
+func setModifyWebviewDomainHandler(c *gin.Context) {
+	appid := c.DefaultQuery("appid", "")
+
+	var req modifyWebviewDomainReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Error(err.Error())
+		c.JSON(http.StatusOK, errno.ErrInvalidParam.WithData(err.Error()))
+		return
+	}
+
+	if req.Action == "" {
+		req.Action = "set"
+	}
+	if req.Action != "get" && req.Action != "set" && req.Action != "add" && req.Action != "delete" {
+		c.JSON(http.StatusOK, errno.ErrInvalidParam.WithData("action 只能是 get、set、add 或 delete"))
+		return
+	}
+	if req.Action != "get" && (req.WebviewDomain == nil || len(req.WebviewDomain) == 0) {
+		c.JSON(http.StatusOK, errno.ErrInvalidParam.WithData("action 为 set/add/delete 时 webviewdomain 不能为空"))
+		return
+	}
+
+	_, body, err := wx.PostWxJsonWithAuthToken(appid, "/wxa/setwebviewdomain_directly", "", req)
+	if err != nil {
+		log.Error(err)
+		c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))
+		return
+	}
+	if body == nil {
+		body = []byte("{}")
+	}
+
+	var resp modifyWebviewDomainResp
 	if err := wx.WxJson.Unmarshal(body, &resp); err != nil {
 		log.Errorf("Unmarshal err, %v", err)
 		c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))

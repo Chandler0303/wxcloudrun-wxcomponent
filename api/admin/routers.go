@@ -55,6 +55,8 @@ func Routers(e *gin.RouterGroup) {
 	g.POST("/privacy-setting", setPrivacySettingHandler)
 	g.GET("/modify-domain", getModifyDomainHandler)
 	g.POST("/modify-domain", setModifyDomainHandler)
+	g.GET("/modify-webview-domain", getModifyWebviewDomainHandler)
+	g.POST("/modify-webview-domain", setModifyWebviewDomainHandler)
 	g.POST("/update-dev-weapp", updateDevWeAppHandler)
 
 	// 设置

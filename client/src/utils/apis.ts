@@ -187,3 +187,11 @@ export const setModifyDomainRequest: IRequestMsg = {
     url: `${HOST}/admin/modify-domain`, // 配置小程序服务器域名
     method: "post"
 }
+export const getModifyWebviewDomainRequest: IRequestMsg = {
+    url: `${HOST}/admin/modify-webview-domain`, // 获取小程序业务域名配置
+    method: "get"
+}
+export const setModifyWebviewDomainRequest: IRequestMsg = {
+    url: `${HOST}/admin/modify-webview-domain`, // 配置小程序业务域名
+    method: "post"
+}

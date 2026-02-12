@@ -1,4 +1,4 @@
-import { Table, Input, PopConfirm, Dialog, Tabs, MessagePlugin, Tag, Select } from 'tdesign-react';
+import { Table, Input, Dialog, Tabs, MessagePlugin, Tag, Select, Dropdown, Button } from 'tdesign-react';
 import { SearchIcon, Icon } from 'tdesign-icons-react'
 import { useEffect, useState } from "react";
 import { request } from "../../utils/axios";
@@ -23,6 +23,7 @@ import {
 import { routes } from "../../config/route";
 import PrivacySettingDialog from './components/PrivacySettingDialog';
 import DomainSettingDialog from './components/DomainSettingDialog';
+import WebviewDomainSettingDialog from './components/WebviewDomainSettingDialog';
 import AuditStatusTag from './components/AuditStatusTag';
 import RegionTypeDialog from './components/RegionTypeDialog';
 
@@ -119,8 +120,6 @@ export default function AuthorizedAccountManage() {
         {
             align: 'center',
             fixed: 'right',
-            width: 210,
-            minWidth: 210,
             className: 'row',
             colKey: 'id',
             title: '操作',
@@ -132,12 +131,26 @@ export default function AuthorizedAccountManage() {
                         </div>
                     );
                 } else {
+                    const options = [
+                        { content: '获取token', value: 'token' },
+                        { content: '复制refresh_token', value: 'copy' },
+                    ];
                     return (
-                        <div style={{ width: '210px' }}>
-                            <PopConfirm content="从数据库获取 token，非重新生成token，不会导致上一个 token 被刷新而失效" onConfirm={() => createToken(row.appid)}>
-                                <a className="a" style={{ margin: '0 10px' }}>获取token</a>
-                            </PopConfirm>
-                            <a className="a" onClick={() => copyMessage(row.refreshToken)}>复制refresh_token</a>
+                        <div style={{ width: '120px' }}>
+                            <Dropdown
+                                options={options}
+                                onClick={(opt) => {
+                                    if (opt.value === 'token') {
+                                        if (window.confirm('从数据库获取 token，非重新生成token，不会导致上一个 token 被刷新而失效。确认获取？')) {
+                                            createToken(row.appid);
+                                        }
+                                    } else if (opt.value === 'copy') {
+                                        copyMessage(row.refreshToken);
+                                    }
+                                }}
+                            >
+                                <Button variant="text" theme="default" size="small"><Icon name="ellipsis" size="20" /></Button>
+                            </Dropdown>
                         </div>
                     );
                 }
@@ -211,27 +224,37 @@ export default function AuthorizedAccountManage() {
         {
             align: 'center',
             fixed: 'right',
-            width: 210,
-            minWidth: 210,
+            width: 120,
+            minWidth: 120,
             className: 'row',
             colKey: 'id',
             title: '操作',
             render({ row }) {
+                const options = [
+                    ...(row.releaseInfo && row.funcInfo?.includes?.(17) ? [{ content: '获取小程序码', value: 'qrcode' }] : []),
+                    ...(row.serviceStatus === 0 ? [{ content: '恢复服务', value: 'restore' }] : []),
+                    { content: '版本管理', value: 'version' },
+                    { content: '完善用户协议', value: 'privacy' },
+                    { content: '服务器域名', value: 'domain' },
+                    { content: '业务域名', value: 'webviewDomain' },
+                ].filter(Boolean);
                 return (
-                    <div style={{ width: '250px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-                        {
-                            (row.releaseInfo && row.funcInfo.includes(17))
-                            &&
-                            <a className="a" style={{ marginRight: '5px' }} onClick={() => getMiniProgramCode(row.appid)}>获取小程序码</a>
-                        }
-                        {
-                            row.serviceStatus === 0
-                            &&
-                            <a className="a" style={{ marginRight: '5px' }} onClick={() => openServiceStatus(row.appid)}>恢复服务</a>
-                        }
-                        <a className="a" href={`#${routes.miniProgramVersion.path}?appId=${row.appid}`}>版本管理</a>
-                        <a className="a" style={{ marginLeft: '5px' }} onClick={() => openPrivacyPolicy(row.appid)}>完善用户协议</a>
-                        <a className="a" style={{ marginLeft: '5px' }} onClick={() => openDomainSetting(row.appid)}>服务器域名</a>
+                    <div style={{ width: '120px' }}>
+                        <Dropdown
+                            options={options}
+                            onClick={(opt) => {
+                                switch (opt.value) {
+                                    case 'qrcode': getMiniProgramCode(row.appid); break;
+                                    case 'restore': openServiceStatus(row.appid); break;
+                                    case 'version': window.location.hash = `${routes.miniProgramVersion.path}?appId=${row.appid}`; break;
+                                    case 'privacy': openPrivacyPolicy(row.appid); break;
+                                    case 'domain': openDomainSetting(row.appid); break;
+                                    case 'webviewDomain': openWebviewDomainSetting(row.appid); break;
+                                }
+                            }}
+                        >
+                            <Button variant="text" theme="default" size="small"><Icon name="ellipsis" size="20" /></Button>
+                        </Dropdown>
                     </div>
                 );
             },
@@ -262,6 +285,8 @@ export default function AuthorizedAccountManage() {
     const [currentRegionType, setCurrentRegionType] = useState('')
     const [visibleDomainDialog, setVisibleDomainDialog] = useState(false)
     const [currentDomainAppId, setCurrentDomainAppId] = useState('')
+    const [visibleWebviewDomainDialog, setVisibleWebviewDomainDialog] = useState(false)
+    const [currentWebviewDomainAppId, setCurrentWebviewDomainAppId] = useState('')
 
     useEffect(() => {
         if (selectedTab === tabs[0].value) {
@@ -380,6 +405,15 @@ export default function AuthorizedAccountManage() {
         getMiniProgramList()
     }
 
+    const openWebviewDomainSetting = (appId: string) => {
+        setCurrentWebviewDomainAppId(appId)
+        setVisibleWebviewDomainDialog(true)
+    }
+
+    const handleWebviewDomainSuccess = () => {
+        getMiniProgramList()
+    }
+
     return (
         <div>
             <p className="text">授权帐号介绍</p>
@@ -492,6 +526,13 @@ export default function AuthorizedAccountManage() {
                 appid={currentDomainAppId}
                 onClose={() => setVisibleDomainDialog(false)}
                 onSuccess={handleDomainSuccess}
+            />
+
+            <WebviewDomainSettingDialog
+                visible={visibleWebviewDomainDialog}
+                appid={currentWebviewDomainAppId}
+                onClose={() => setVisibleWebviewDomainDialog(false)}
+                onSuccess={handleWebviewDomainSuccess}
             />
 
         </div>
