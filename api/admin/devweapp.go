@@ -192,6 +192,7 @@ type getDevWeAppListResp struct {
 	Appid         string `json:"appid"`
 	NickName      string `json:"nickName"`
 	RegionType    string `json:"regionType"`
+	ExtJsonConfig string `json:"extJsonConfig"`
 	FuncInfo      []int  `json:"funcInfo"`
 	QrCodeUrl     string `json:"qrCodeUrl"`
 	ServiceStatus int    `json:"serviceStatus"`
@@ -405,6 +406,7 @@ func getDevWeAppListHandler(c *gin.Context) {
 			resp[i].NickName = record.NickName
 			resp[i].QrCodeUrl = record.QrcodeUrl
 			resp[i].RegionType = record.RegionType
+			resp[i].ExtJsonConfig = parseExtJsonConfig(record.ExtJson)
 
 			// 获取权限集列表
 			strFuncInfoList := strings.Split(record.FuncInfo, "|")
@@ -983,8 +985,26 @@ func setModifyWebviewDomainHandler(c *gin.Context) {
 }
 
 type updateDevWeAppReq struct {
-	Appid      string `json:"appid" binding:"required"`
-	RegionType string `json:"regionType" binding:"required"`
+	Appid         string  `json:"appid" binding:"required"`
+	RegionType    string  `json:"regionType" binding:"omitempty"` // 可选，仅更新局点时需传
+	ExtJsonConfig *string `json:"extJsonConfig,omitempty"`
+}
+
+func parseExtJsonConfig(extJson string) string {
+	if extJson == "" {
+		return ""
+	}
+	var data struct {
+		Config  string `json:"config"`
+		Remark  string `json:"remark"` // 兼容旧数据
+	}
+	if err := json.Unmarshal([]byte(extJson), &data); err != nil {
+		return ""
+	}
+	if data.Config != "" {
+		return data.Config
+	}
+	return data.Remark
 }
 
 func updateDevWeAppHandler(c *gin.Context) {
@@ -997,6 +1017,11 @@ func updateDevWeAppHandler(c *gin.Context) {
 	updateMap := make(map[string]interface{})
 	if req.RegionType != "" {
 		updateMap["regiontype"] = req.RegionType
+	}
+	if req.ExtJsonConfig != nil {
+		extData := map[string]interface{}{"config": *req.ExtJsonConfig}
+		extBytes, _ := json.Marshal(extData)
+		updateMap["extjson"] = string(extBytes)
 	}
 
 	if len(updateMap) > 0 {

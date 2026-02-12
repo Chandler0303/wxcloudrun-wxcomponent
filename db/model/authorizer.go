@@ -18,4 +18,5 @@ type Authorizer struct {
 	FuncInfo      string    `gorm:"column:funcinfo" json:"funcInfo"`
 	VerifyInfo    int       `gorm:"column:verifyinfo" json:"verifyInfo"`
 	AuthTime      time.Time `gorm:"column:authtime" json:"authTime"`
+	ExtJson       string    `gorm:"column:extjson;type:json" json:"extJson"`
 }

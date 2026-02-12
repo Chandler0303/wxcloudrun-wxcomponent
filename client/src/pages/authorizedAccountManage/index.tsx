@@ -26,6 +26,7 @@ import DomainSettingDialog from './components/DomainSettingDialog';
 import WebviewDomainSettingDialog from './components/WebviewDomainSettingDialog';
 import AuditStatusTag from './components/AuditStatusTag';
 import RegionTypeDialog from './components/RegionTypeDialog';
+import ExtJsonConfigDialog from './components/ExtJsonConfigDialog';
 
 const { TabPanel } = Tabs
 
@@ -237,6 +238,7 @@ export default function AuthorizedAccountManage() {
                     { content: '完善用户协议', value: 'privacy' },
                     { content: '服务器域名', value: 'domain' },
                     { content: '业务域名', value: 'webviewDomain' },
+                    { content: 'extJson配置', value: 'remark' },
                 ].filter(Boolean);
                 return (
                     <div style={{ width: '120px' }}>
@@ -250,6 +252,7 @@ export default function AuthorizedAccountManage() {
                                     case 'privacy': openPrivacyPolicy(row.appid); break;
                                     case 'domain': openDomainSetting(row.appid); break;
                                     case 'webviewDomain': openWebviewDomainSetting(row.appid); break;
+                                    case 'remark': openExtJsonConfigDialog(row); break;
                                 }
                             }}
                         >
@@ -287,6 +290,9 @@ export default function AuthorizedAccountManage() {
     const [currentDomainAppId, setCurrentDomainAppId] = useState('')
     const [visibleWebviewDomainDialog, setVisibleWebviewDomainDialog] = useState(false)
     const [currentWebviewDomainAppId, setCurrentWebviewDomainAppId] = useState('')
+    const [visibleExtJsonConfigDialog, setVisibleExtJsonConfigDialog] = useState(false)
+    const [currentExtJsonConfigAppId, setCurrentExtJsonConfigAppId] = useState('')
+    const [currentExtJsonConfig, setCurrentExtJsonConfig] = useState('')
 
     useEffect(() => {
         if (selectedTab === tabs[0].value) {
@@ -414,6 +420,16 @@ export default function AuthorizedAccountManage() {
         getMiniProgramList()
     }
 
+    const openExtJsonConfigDialog = (row: any) => {
+        setCurrentExtJsonConfigAppId(row.appid)
+        setCurrentExtJsonConfig(row.extJsonConfig || '')
+        setVisibleExtJsonConfigDialog(true)
+    }
+
+    const handleExtJsonConfigSuccess = () => {
+        getMiniProgramList()
+    }
+
     return (
         <div>
             <p className="text">授权帐号介绍</p>
@@ -533,6 +549,14 @@ export default function AuthorizedAccountManage() {
                 appid={currentWebviewDomainAppId}
                 onClose={() => setVisibleWebviewDomainDialog(false)}
                 onSuccess={handleWebviewDomainSuccess}
+            />
+
+            <ExtJsonConfigDialog
+                visible={visibleExtJsonConfigDialog}
+                appid={currentExtJsonConfigAppId}
+                initialExtJsonConfig={currentExtJsonConfig}
+                onClose={() => setVisibleExtJsonConfigDialog(false)}
+                onSuccess={handleExtJsonConfigSuccess}
             />
 
         </div>

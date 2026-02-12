@@ -18,6 +18,7 @@ import { truncate } from 'lodash'
 import { request } from "../../../utils/axios";
 import {
     commitCodeRequest,
+    getDevMiniProgramListRequest,
     getDevVersionRequest, getTemplateListRequest,
     releaseCodeRequest,
     revokeAuditRequest, rollbackReleaseRequest,
@@ -207,7 +208,7 @@ export default function MiniProgramVersion() {
         switch (value) {
             case 1: {
                 // 重新提交代码
-                setVisibleSubmitModal(true)
+                openSubmitModal()
                 break
             }
             case 2: {
@@ -247,6 +248,20 @@ export default function MiniProgramVersion() {
     const closeSubmitModal = () => {
         formRef.current.reset()
         setVisibleSubmitModal(false)
+    }
+
+    const openSubmitModal = async () => {
+        const resp = await request({
+            request: getDevMiniProgramListRequest,
+            data: {
+                appid: appId,
+                offset: 0,
+                limit: 1
+            }
+        })
+        const extJsonConfig = resp.code === 0 && resp.data?.records?.[0]?.extJsonConfig ? resp.data.records[0].extJsonConfig : ''
+        formRef.current?.setFieldsValue?.({ extJson: extJsonConfig })
+        setVisibleSubmitModal(true)
     }
 
     const submitCode = async (e: { validateResult: any }) => {
@@ -432,7 +447,7 @@ export default function MiniProgramVersion() {
                     <Loading size="small" loading={loading} showOverlay>
                         <div style={{ textAlign: 'center', margin: '100px 0' }}>
                             <p className="desc">尚未提交体验版</p>
-                            <Button onClick={() => setVisibleSubmitModal(true)}>提交代码</Button>
+                            <Button onClick={openSubmitModal}>提交代码</Button>
                         </div>
                     </Loading>
             }
