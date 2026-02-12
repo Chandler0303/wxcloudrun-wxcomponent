@@ -467,6 +467,51 @@ func submitAuditHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, errno.OK.WithData(gin.H{"auditId": auditId}))
 }
 
+type batchSubmitAuditReq struct {
+	Appids      []string       `json:"appids" binding:"required"`
+	AuditConfig submitAuditReq `json:"auditConfig" binding:"required"`
+}
+
+type batchSubmitAuditFailedItem struct {
+	Appid  string `json:"appid"`
+	ErrMsg string `json:"errMsg"`
+}
+
+type batchSubmitAuditResp struct {
+	Success []string                    `json:"success"`
+	Failed  []batchSubmitAuditFailedItem `json:"failed"`
+}
+
+func batchSubmitAuditHandler(c *gin.Context) {
+	var req batchSubmitAuditReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusOK, errno.ErrInvalidParam.WithData(err.Error()))
+		return
+	}
+	if len(req.Appids) == 0 {
+		c.JSON(http.StatusOK, errno.ErrInvalidParam.WithData("appids 不能为空"))
+		return
+	}
+	if len(req.Appids) > 20 {
+		c.JSON(http.StatusOK, errno.ErrInvalidParam.WithData("单次最多支持 20 个小程序"))
+		return
+	}
+
+	var success []string
+	var failed []batchSubmitAuditFailedItem
+
+	for _, appid := range req.Appids {
+		_, err := submitAudit(appid, &req.AuditConfig)
+		if err != nil {
+			failed = append(failed, batchSubmitAuditFailedItem{Appid: appid, ErrMsg: err.Error()})
+		} else {
+			success = append(success, appid)
+		}
+	}
+
+	c.JSON(http.StatusOK, errno.OK.WithData(batchSubmitAuditResp{Success: success, Failed: failed}))
+}
+
 func devVersionsHandler(c *gin.Context) {
 	appid := c.DefaultQuery("appid", "")
 	var resp devVersionsResp
@@ -623,12 +668,74 @@ func commitCodeHandler(c *gin.Context) {
 		c.JSON(http.StatusOK, errno.ErrInvalidParam.WithData(err.Error()))
 		return
 	}
-	if _, _, err := wx.PostWxJsonWithAuthToken(appid, "/wxa/commit", "", req); err != nil {
+	if _, _, err := wx.PostWxJsonWithAuthTokenLongTimeout(appid, "/wxa/commit", "", req); err != nil {
 		log.Error(err.Error())
 		c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))
 		return
 	}
 	c.JSON(http.StatusOK, errno.OK)
+}
+
+type batchCommitCodeReq struct {
+	Appids      []string `json:"appids" binding:"required"`
+	TemplateId  string   `json:"templateId" binding:"required"`
+	UserVersion string   `json:"userVersion" binding:"required"`
+	UserDesc    string   `json:"userDesc" binding:"required"`
+}
+
+type batchCommitCodeFailedItem struct {
+	Appid   string `json:"appid"`
+	ErrMsg  string `json:"errMsg"`
+}
+
+type batchCommitCodeResp struct {
+	Success []string                    `json:"success"`
+	Failed  []batchCommitCodeFailedItem `json:"failed"`
+}
+
+func batchCommitCodeHandler(c *gin.Context) {
+	var req batchCommitCodeReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusOK, errno.ErrInvalidParam.WithData(err.Error()))
+		return
+	}
+	if len(req.Appids) == 0 {
+		c.JSON(http.StatusOK, errno.ErrInvalidParam.WithData("appids 不能为空"))
+		return
+	}
+	if len(req.Appids) > 20 {
+		c.JSON(http.StatusOK, errno.ErrInvalidParam.WithData("单次最多支持 20 个小程序"))
+		return
+	}
+
+	var success []string
+	var failed []batchCommitCodeFailedItem
+
+	for _, appid := range req.Appids {
+		extJson := ""
+		records, _, err := dao.GetAuthorizerRecords(appid, 0, 1)
+		if err == nil && len(records) > 0 {
+			extJson = parseExtJsonConfig(records[0].ExtJson)
+		}
+		if extJson == "" {
+			extJson = "{}"
+		}
+
+		commitReq := codeCommitReq{
+			TemplateId:  req.TemplateId,
+			ExtJson:     extJson,
+			UserVersion: req.UserVersion,
+			UserDesc:    req.UserDesc,
+		}
+		_, _, err = wx.PostWxJsonWithAuthTokenLongTimeout(appid, "/wxa/commit", "", commitReq)
+		if err != nil {
+			failed = append(failed, batchCommitCodeFailedItem{Appid: appid, ErrMsg: err.Error()})
+		} else {
+			success = append(success, appid)
+		}
+	}
+
+	c.JSON(http.StatusOK, errno.OK.WithData(batchCommitCodeResp{Success: success, Failed: failed}))
 }
 
 func releaseCodeHandler(c *gin.Context) {
@@ -736,6 +843,17 @@ func getQRCodeHandler(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, errno.OK.WithData(gin.H{"releaseQrCode": base64Image}))
+}
+
+func getExpQRCodeHandler(c *gin.Context) {
+	appid := c.DefaultQuery("appid", "")
+	base64Image, err := getExpQrCode(appid)
+	if err != nil {
+		log.Error(err)
+		c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, errno.OK.WithData(gin.H{"expQrCode": base64Image}))
 }
 
 // snakeToCamel 将下划线命名转为驼峰，如 user_info -> userInfo

@@ -76,6 +76,7 @@ export default function MiniProgramVersion() {
         expInfo: undefined
     })
     const [visibleSubmitModal, setVisibleSubmitModal] = useState(false)
+    const [submitModalExtJson, setSubmitModalExtJson] = useState('')
     const [loading, setLoading] = useState(true)
     const [templateList, setTemplateList] = useState<ITemplateList>([])
     const [searchParams] = useSearchParams();
@@ -260,8 +261,12 @@ export default function MiniProgramVersion() {
             }
         })
         const extJsonConfig = resp.code === 0 && resp.data?.records?.[0]?.extJsonConfig ? resp.data.records[0].extJsonConfig : ''
-        formRef.current?.setFieldsValue?.({ extJson: extJsonConfig })
+        setSubmitModalExtJson(extJsonConfig)
         setVisibleSubmitModal(true)
+    }
+
+    const onSubmitModalOpened = () => {
+        formRef.current?.setFieldsValue?.({ extJson: submitModalExtJson })
     }
 
     const submitCode = async (e: { validateResult: any }) => {
@@ -452,7 +457,7 @@ export default function MiniProgramVersion() {
                     </Loading>
             }
 
-            <Dialog visible={visibleSubmitModal} onClose={closeSubmitModal} confirmBtn={null} width={700}
+            <Dialog visible={visibleSubmitModal} onClose={closeSubmitModal} onOpened={onSubmitModalOpened} confirmBtn={null} width={700}
                 cancelBtn={null} header="提交代码">
                 <Form ref={formRef} onSubmit={submitCode} labelWidth={200}>
                     <FormItem name="templateId" label="模板ID(template_id)"

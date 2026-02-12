@@ -36,6 +36,7 @@ func Routers(e *gin.RouterGroup) {
 	// 代开发小程序管理
 	g.GET("/dev-weapp-list", getDevWeAppListHandler)
 	g.POST("/submit-audit", submitAuditHandler)
+	g.POST("/batch-submit-audit", batchSubmitAuditHandler)
 	g.GET("/dev-versions", devVersionsHandler)
 	g.GET("/template-list", templateListHandler)
 	g.POST("/del-template", delTemplateHandler)
@@ -44,6 +45,7 @@ func Routers(e *gin.RouterGroup) {
 	g.POST("/revoke-audit", revokeAuditHandler)
 	g.POST("/speed-up-audit", speedUpAuditHandler)
 	g.POST("/commit-code", commitCodeHandler)
+	g.POST("/batch-commit-code", batchCommitCodeHandler)
 	g.POST("/release-code", releaseCodeHandler)
 	g.POST("/upload-media", uploadMediaHandler)
 	g.POST("/change-visit-status", changeVisitStatusHandler)
@@ -51,6 +53,7 @@ func Routers(e *gin.RouterGroup) {
 	g.GET("/page-list", getPageListHandler)
 	g.GET("/category", getCategoryHandler)
 	g.GET("/qrcode", getQRCodeHandler)
+	g.GET("/exp-qrcode", getExpQRCodeHandler)
 	g.GET("/privacy-setting", getPrivacySettingHandler)
 	g.POST("/privacy-setting", setPrivacySettingHandler)
 	g.GET("/modify-domain", getModifyDomainHandler)

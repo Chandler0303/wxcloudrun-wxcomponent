@@ -6,7 +6,7 @@ import {
     changeServiceStatusRequest,
     getAuthAccessTokenRequest,
     getAuthorizedAccountRequest,
-    getDevMiniProgramListRequest, getQrcodeRequest, updateDevWeAppRequest
+    getDevMiniProgramListRequest, getQrcodeRequest, getExpQrcodeRequest, updateDevWeAppRequest
 } from "../../utils/apis";
 import { PrimaryTableCol } from "tdesign-react/es/table/type";
 import moment from "moment";
@@ -27,6 +27,8 @@ import WebviewDomainSettingDialog from './components/WebviewDomainSettingDialog'
 import AuditStatusTag from './components/AuditStatusTag';
 import RegionTypeDialog from './components/RegionTypeDialog';
 import ExtJsonConfigDialog from './components/ExtJsonConfigDialog';
+import BatchCommitCodeDialog from './components/BatchCommitCodeDialog';
+import BatchSubmitAuditDialog from './components/BatchSubmitAuditDialog';
 
 const { TabPanel } = Tabs
 
@@ -140,6 +142,7 @@ export default function AuthorizedAccountManage() {
                         <div style={{ width: '120px' }}>
                             <Dropdown
                                 options={options}
+                                maxColumnWidth={180}
                                 onClick={(opt) => {
                                     if (opt.value === 'token') {
                                         if (window.confirm('从数据库获取 token，非重新生成token，不会导致上一个 token 被刷新而失效。确认获取？')) {
@@ -161,37 +164,22 @@ export default function AuthorizedAccountManage() {
 
     const miniProgramColumn: PrimaryTableCol[] = [
         {
+            colKey: 'row-select',
+            type: 'multiple',
+            width: 50,
+        },
+        {
             align: 'center',
-            minWidth: 200,
+            width: 220,
+            minWidth: 220,
             colKey: 'appid',
-            title: 'AppID',
-        },
-        {
-            align: 'center',
-            minWidth: 100,
-            colKey: 'nickName',
-            title: '名称',
-        },
-        {
-            align: 'center',
-            minWidth: 120,
-            colKey: 'releaseInfo',
-            title: '发布状态',
-            render: ({ row }) => row.releaseInfo ? '已有上线版本' : '尚未发布'
-        },
-        {
-            align: 'center',
-            minWidth: 120,
-            colKey: 'releaseVersion',
-            title: '生产版本',
-            render: ({ row }) => row.releaseInfo ? row.releaseInfo.releaseVersion : '--'
-        },
-        {
-            align: 'center',
-            minWidth: 100,
-            colKey: 'serviceStatus',
-            title: '服务状态',
-            render: ({ row }) => serviceStatus[row.serviceStatus]
+            title: '基本信息',
+            render: ({ row }) => (
+                <div style={{ width: '220px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                    <span>名称：{row.nickName}</span>
+                    <span>AppID：{row.appid}</span>
+                </div>
+            )
         },
         {
             align: 'center',
@@ -206,6 +194,20 @@ export default function AuthorizedAccountManage() {
         },
         {
             align: 'center',
+            width: 180,
+            minWidth: 180,
+            colKey: 'releaseInfo',
+            title: '生产信息',
+            render: ({ row }) => (
+                <div style={{ width: '180px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                    <span>状态：{row.releaseInfo ? '已有上线版本' : '尚未发布'}</span>
+                    <span>版本：{row.releaseInfo ? row.releaseInfo.releaseVersion : '--'}</span>
+                    <span>服务：{serviceStatus[row.serviceStatus]}</span>
+                </div>
+            )
+        },
+        {
+            align: 'center',
             width: 200,
             minWidth: 200,
             colKey: 'auditVersion',
@@ -216,10 +218,30 @@ export default function AuthorizedAccountManage() {
                         <AuditStatusTag auditVersion={row.auditVersion} />
                         <span>版本：{row.auditVersion.userVersion}</span>
                         <span>时间：{moment(row.auditVersion.submitAuditTime).format('YYYY-MM-DD HH:mm:ss')}</span>
+                        {row.auditVersion.userDesc && <span>描述：{row.auditVersion.userDesc}</span>}
                     </div>
                 } else {
                     return '--'
                 }
+            }
+        },
+        {
+            align: 'center',
+            width: 200,
+            minWidth: 200,
+            colKey: 'expInfo',
+            title: '体验版信息',
+            render: ({ row }) => {
+                if (row.expInfo) {
+                    return (
+                        <div style={{ width: '200px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                            <span>版本：{row.expInfo.expVersion}</span>
+                            <span>时间：{moment(row.expInfo.expTime).format('YYYY-MM-DD HH:mm:ss')}</span>
+                            {row.expInfo.expDesc && <span>描述：{row.expInfo.expDesc}</span>}
+                        </div>
+                    );
+                }
+                return '--';
             }
         },
         {
@@ -233,6 +255,7 @@ export default function AuthorizedAccountManage() {
             render({ row }) {
                 const options = [
                     ...(row.releaseInfo && row.funcInfo?.includes?.(17) ? [{ content: '获取小程序码', value: 'qrcode' }] : []),
+                    ...(row.expInfo ? [{ content: '获取体验版二维码', value: 'expQrcode' }] : []),
                     ...(row.serviceStatus === 0 ? [{ content: '恢复服务', value: 'restore' }] : []),
                     { content: '版本管理', value: 'version' },
                     { content: '完善用户协议', value: 'privacy' },
@@ -244,9 +267,11 @@ export default function AuthorizedAccountManage() {
                     <div style={{ width: '120px' }}>
                         <Dropdown
                             options={options}
+                            maxColumnWidth={180}
                             onClick={(opt) => {
                                 switch (opt.value) {
                                     case 'qrcode': getMiniProgramCode(row.appid); break;
+                                    case 'expQrcode': getExpQrCode(row.appid); break;
                                     case 'restore': openServiceStatus(row.appid); break;
                                     case 'version': window.location.hash = `${routes.miniProgramVersion.path}?appId=${row.appid}`; break;
                                     case 'privacy': openPrivacyPolicy(row.appid); break;
@@ -281,6 +306,7 @@ export default function AuthorizedAccountManage() {
     const [selectedTab, setSelectedTab] = useState<string | number>(tabs[0].value)
     const [visibleQrcode, setVisibleQrcode] = useState(false)
     const [qrcode, setQrcode] = useState('')
+    const [qrcodeDialogTitle, setQrcodeDialogTitle] = useState('获取小程序码')
     const [visiblePrivacyDialog, setVisiblePrivacyDialog] = useState(false)
     const [currentPrivacyAppId, setCurrentPrivacyAppId] = useState('')
     const [visibleRegionDialog, setVisibleRegionDialog] = useState(false)
@@ -293,6 +319,9 @@ export default function AuthorizedAccountManage() {
     const [visibleExtJsonConfigDialog, setVisibleExtJsonConfigDialog] = useState(false)
     const [currentExtJsonConfigAppId, setCurrentExtJsonConfigAppId] = useState('')
     const [currentExtJsonConfig, setCurrentExtJsonConfig] = useState('')
+    const [selectedMiniProgramKeys, setSelectedMiniProgramKeys] = useState<(string | number)[]>([])
+    const [visibleBatchSubmitAuditDialog, setVisibleBatchSubmitAuditDialog] = useState(false)
+    const [visibleBatchCommitCodeDialog, setVisibleBatchCommitCodeDialog] = useState(false)
 
     useEffect(() => {
         if (selectedTab === tabs[0].value) {
@@ -305,6 +334,12 @@ export default function AuthorizedAccountManage() {
             getMiniProgramList()
         }
     }, [mpCurrentPage, selectedTab, miniProgramRegionType])
+
+    useEffect(() => {
+        if (selectedTab === tabs[1].value) {
+            setSelectedMiniProgramKeys([])
+        }
+    }, [mpCurrentPage])
 
     const createToken = async (appId: string) => {
         const resp = await request({
@@ -356,15 +391,25 @@ export default function AuthorizedAccountManage() {
     const getMiniProgramCode = async (appId: string) => {
         const resp = await request({
             request: getQrcodeRequest,
-            data: {
-                appid: appId,
-            }
+            data: { appid: appId }
         })
         if (resp.code === 0) {
             setQrcode('data:image/png;base64,' + resp.data.releaseQrCode)
+            setQrcodeDialogTitle('获取小程序码')
             setVisibleQrcode(true)
         }
+    }
 
+    const getExpQrCode = async (appId: string) => {
+        const resp = await request({
+            request: getExpQrcodeRequest,
+            data: { appid: appId }
+        })
+        if (resp.code === 0) {
+            setQrcode('data:image/png;base64,' + resp.data.expQrCode)
+            setQrcodeDialogTitle('获取体验版二维码')
+            setVisibleQrcode(true)
+        }
     }
 
     const openServiceStatus = async (appId: string) => {
@@ -430,6 +475,28 @@ export default function AuthorizedAccountManage() {
         getMiniProgramList()
     }
 
+    const openBatchSubmitAuditDialog = () => {
+        setVisibleBatchSubmitAuditDialog(true)
+    }
+
+    const handleBatchSubmitAuditClose = () => {
+        setVisibleBatchSubmitAuditDialog(false)
+    }
+
+    const openBatchCommitCodeDialog = () => {
+        setVisibleBatchCommitCodeDialog(true)
+    }
+
+    const handleBatchCommitCodeClose = () => {
+        setVisibleBatchCommitCodeDialog(false)
+        setSelectedMiniProgramKeys([])
+        getMiniProgramList()
+    }
+
+    const handleBatchCommitCodeSuccess = () => {
+        getMiniProgramList()
+    }
+
     return (
         <div>
             <p className="text">授权帐号介绍</p>
@@ -485,10 +552,40 @@ export default function AuthorizedAccountManage() {
                             ))}
                         </Select>
                     </div>
+                    <div style={{ marginBottom: '10px', display: 'flex', gap: '10px' }}>
+                        <Button
+                            theme="primary"
+                            variant="outline"
+                            onClick={() => {
+                                if (selectedMiniProgramKeys.length === 0) {
+                                    MessagePlugin.warning('请先勾选小程序')
+                                    return
+                                }
+                                openBatchCommitCodeDialog()
+                            }}
+                        >
+                            批量发体验版 {selectedMiniProgramKeys.length > 0 ? `(${selectedMiniProgramKeys.length})` : ''}
+                        </Button>
+                        <Button
+                            theme="primary"
+                            variant="outline"
+                            onClick={() => {
+                                if (selectedMiniProgramKeys.length === 0) {
+                                    MessagePlugin.warning('请先勾选要提交审核的小程序')
+                                    return
+                                }
+                                openBatchSubmitAuditDialog()
+                            }}
+                        >
+                            批量提交审核 {selectedMiniProgramKeys.length > 0 ? `(${selectedMiniProgramKeys.length})` : ''}
+                        </Button>
+                    </div>
                     <Table
                         data={miniProgramList}
                         columns={miniProgramColumn}
                         rowKey="appid"
+                        selectedRowKeys={selectedMiniProgramKeys}
+                        onSelectChange={(keys, options) => setSelectedMiniProgramKeys(keys)}
                         tableLayout="auto"
                         verticalAlign="middle"
                         size="small"
@@ -516,7 +613,7 @@ export default function AuthorizedAccountManage() {
                 />
             </Dialog>
 
-            <Dialog header="获取小程序码" visible={visibleQrcode} footer={null} onClose={() => setVisibleQrcode(false)}>
+            <Dialog header={qrcodeDialogTitle} visible={visibleQrcode} footer={null} onClose={() => setVisibleQrcode(false)}>
                 <div style={{ textAlign: 'center' }}>
                     <img src={qrcode} style={{ width: '200px', height: '200px' }} alt="" />
                 </div>
@@ -557,6 +654,25 @@ export default function AuthorizedAccountManage() {
                 initialExtJsonConfig={currentExtJsonConfig}
                 onClose={() => setVisibleExtJsonConfigDialog(false)}
                 onSuccess={handleExtJsonConfigSuccess}
+            />
+
+            <BatchSubmitAuditDialog
+                visible={visibleBatchSubmitAuditDialog}
+                appids={selectedMiniProgramKeys}
+                selectedRows={miniProgramList.filter((row: any) => selectedMiniProgramKeys.includes(row.appid)).map((row: any) => ({ appid: row.appid, nickName: row.nickName }))}
+                onClose={handleBatchSubmitAuditClose}
+                onSuccess={() => {
+                    getMiniProgramList();
+                    setSelectedMiniProgramKeys([]);
+                }}
+            />
+
+            <BatchCommitCodeDialog
+                visible={visibleBatchCommitCodeDialog}
+                appids={selectedMiniProgramKeys}
+                selectedRows={miniProgramList.filter((row: any) => selectedMiniProgramKeys.includes(row.appid)).map((row: any) => ({ appid: row.appid, nickName: row.nickName }))}
+                onClose={handleBatchCommitCodeClose}
+                onSuccess={handleBatchCommitCodeSuccess}
             />
 
         </div>

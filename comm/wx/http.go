@@ -3,6 +3,7 @@ package wx
 import (
 	"fmt"
 	"mime/multipart"
+	"time"
 
 	"github.com/WeixinCloud/wxcloudrun-wxcomponent/comm/config"
 	"github.com/WeixinCloud/wxcloudrun-wxcomponent/comm/httputils"
@@ -136,6 +137,45 @@ func postWxFormData(url string, formFile multipart.File,
 	return &wxError, body, nil
 }
 
+// postWxJsonWithTimeout 向微信开放平台发起post请求，可指定超时（提交代码等耗时操作建议 60s）
+func postWxJsonWithTimeout(url string, data interface{}, timeout time.Duration) (*WxCommError, []byte, error) {
+	var wxError WxCommError
+	var body []byte
+	var err error
+	var jsonByte []byte
+
+	switch v := data.(type) {
+	case nil:
+		jsonByte = []byte("{}")
+	case gin.H:
+		if len(v) == 0 {
+			jsonByte = []byte("{}")
+		} else {
+			jsonByte, _ = WxJson.Marshal(data)
+		}
+	case map[string]interface{}:
+		if len(v) == 0 {
+			jsonByte = []byte("{}")
+		} else {
+			jsonByte, _ = WxJson.Marshal(data)
+		}
+	default:
+		jsonByte, _ = WxJson.Marshal(data)
+	}
+
+	if body, err = httputils.PostWithTimeout(url, jsonByte, "application/json", timeout); err != nil {
+		return &wxError, body, err
+	}
+	if err = WxJson.Unmarshal(body, &wxError); err != nil {
+		log.Errorf("Unmarshal err, %v", err)
+		return &wxError, body, err
+	}
+	if wxError.ErrCode != 0 {
+		return &wxError, body, fmt.Errorf("WxErrCode != 0, resp: %v", wxError)
+	}
+	return &wxError, body, nil
+}
+
 // getWxApi 向微信开放平台发起get请求
 func getWxApi(url string) (*WxCommError, []byte, error) {
 	var wxError WxCommError
@@ -170,6 +210,15 @@ func PostWxJsonWithAuthToken(appid string, path string, query string, data inter
 		return nil, []byte{}, err
 	}
 	return postWxJson(url, data)
+}
+
+// PostWxJsonWithAuthTokenLongTimeout 以小程序身份发起post请求，60秒超时（用于提交代码等耗时操作）
+func PostWxJsonWithAuthTokenLongTimeout(appid string, path string, query string, data interface{}) (*WxCommError, []byte, error) {
+	url, err := GetAuthorizerWxApiUrl(appid, path, query)
+	if err != nil {
+		return nil, []byte{}, err
+	}
+	return postWxJsonWithTimeout(url, data, 60*time.Second)
 }
 
 // PostWxJsonWithoutToken 向微信开放平台发起post请求

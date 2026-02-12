@@ -60,10 +60,21 @@ func Post(url string, data []byte, contentType string) ([]byte, error) {
 	return body, err
 }
 
-// RawPost 发起post请求
+// PostWithTimeout 发起post请求，可指定超时时间（如提交代码等耗时操作建议 60s）
+func PostWithTimeout(url string, data []byte, contentType string, timeout time.Duration) ([]byte, error) {
+	_, body, err := RawPostWithTimeout(url, data, contentType, timeout)
+	return body, err
+}
+
+// RawPost 发起post请求，默认 5 秒超时
 func RawPost(url string, data []byte, contentType string) (*http.Response, []byte, error) {
-	client := &http.Client{Timeout: 5 * time.Second}
-	log.Debugf("[post]http url: %s content-type: %s", url, contentType)
+	return RawPostWithTimeout(url, data, contentType, 5*time.Second)
+}
+
+// RawPostWithTimeout 发起post请求，可指定超时时间
+func RawPostWithTimeout(url string, data []byte, contentType string, timeout time.Duration) (*http.Response, []byte, error) {
+	client := &http.Client{Timeout: timeout}
+	log.Debugf("[post]http url: %s content-type: %s timeout: %v", url, contentType, timeout)
 	log.Debugf("[post]http req: %s", data)
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(data))
 	if err != nil {

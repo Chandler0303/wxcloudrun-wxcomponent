@@ -111,12 +111,20 @@ export const getQrcodeRequest: IRequestMsg = {
     url: `${HOST}/admin/qrcode`, // 获取小程序码
     method: "get"
 }
+export const getExpQrcodeRequest: IRequestMsg = {
+    url: `${HOST}/admin/exp-qrcode`, // 获取体验版二维码
+    method: "get"
+}
 export const getDevVersionRequest: IRequestMsg = {
     url: `${HOST}/admin/dev-versions`, // 获取代开发小程序版本详情
     method: "get"
 }
 export const submitAuditRequest: IRequestMsg = {
     url: `${HOST}/admin/submit-audit`, // 提交审核
+    method: "post"
+}
+export const batchSubmitAuditRequest: IRequestMsg = {
+    url: `${HOST}/admin/batch-submit-audit`, // 批量提交审核
     method: "post"
 }
 export const revokeAuditRequest: IRequestMsg = {
@@ -129,6 +137,10 @@ export const speedUpAuditRequest: IRequestMsg = {
 }
 export const commitCodeRequest: IRequestMsg = {
     url: `${HOST}/admin/commit-code`, // 提交代码
+    method: "post"
+}
+export const batchCommitCodeRequest: IRequestMsg = {
+    url: `${HOST}/admin/batch-commit-code`, // 批量提交代码
     method: "post"
 }
 export const releaseCodeRequest: IRequestMsg = {
