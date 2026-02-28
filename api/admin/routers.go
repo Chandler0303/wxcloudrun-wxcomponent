@@ -60,6 +60,7 @@ func Routers(e *gin.RouterGroup) {
 	g.POST("/modify-domain", setModifyDomainHandler)
 	g.GET("/modify-webview-domain", getModifyWebviewDomainHandler)
 	g.POST("/modify-webview-domain", setModifyWebviewDomainHandler)
+	g.POST("/jump-domain-confirm-file", getJumpDomainConfirmFileHandler)
 	g.POST("/update-dev-weapp", updateDevWeAppHandler)
 
 	// 设置

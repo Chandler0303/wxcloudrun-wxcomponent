@@ -1,7 +1,7 @@
 import { Dialog, Button, MessagePlugin, Textarea } from 'tdesign-react';
 import { useState, useEffect } from 'react';
 import { request } from '../../../utils/axios';
-import { getModifyWebviewDomainRequest, setModifyWebviewDomainRequest } from '../../../utils/apis';
+import { getModifyWebviewDomainRequest, setModifyWebviewDomainRequest, getJumpDomainConfirmFileRequest } from '../../../utils/apis';
 
 interface ModifyWebviewDomainResp {
     webviewDomain?: string[];
@@ -35,10 +35,14 @@ export default function WebviewDomainSettingDialog({
     const [formData, setFormData] = useState('');
     const [loading, setLoading] = useState(false);
     const [invalidInfo, setInvalidInfo] = useState<string[] | null>(null);
+    const [confirmFileContent, setConfirmFileContent] = useState<string>('');
+    const [confirmFileName, setConfirmFileName] = useState<string>('');
+    const [loadingConfirmFile, setLoadingConfirmFile] = useState(false);
 
     useEffect(() => {
         if (visible && appid) {
             getDomainSetting();
+            getConfirmFile();
         }
     }, [visible, appid]);
 
@@ -58,6 +62,50 @@ export default function WebviewDomainSettingDialog({
             console.error('获取业务域名配置失败:', error);
             MessagePlugin.error('获取业务域名配置失败');
         }
+    };
+
+    const getConfirmFile = async () => {
+        if (!appid || !formData) return;
+
+        setLoadingConfirmFile(true);
+        try {
+            const domains = fromTextareaValue(formData);
+            if (domains.length === 0) {
+                setLoadingConfirmFile(false);
+                return;
+            }
+
+            const resp = await request({
+                request: { url: `${getJumpDomainConfirmFileRequest.url}?appid=${appid}`, method: getJumpDomainConfirmFileRequest.method },
+                data: { jump_domain: domains[0] }
+            });
+
+            if (resp.code === 0 && resp.data) {
+                setConfirmFileContent(resp.data.file_content || '');
+                setConfirmFileName(resp.data.file_name || '');
+            }
+        } catch (error) {
+            console.error('获取校验文件失败:', error);
+        } finally {
+            setLoadingConfirmFile(false);
+        }
+    };
+
+    const downloadConfirmFile = () => {
+        if (!confirmFileContent) {
+            MessagePlugin.warning('校验文件内容为空');
+            return;
+        }
+
+        const element = document.createElement('a');
+        const file = new Blob([confirmFileContent], { type: 'text/plain' });
+        element.href = URL.createObjectURL(file);
+        element.download = confirmFileName;
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+        URL.revokeObjectURL(element.href);
+        MessagePlugin.success('校验文件已下载');
     };
 
     const handleSubmit = async () => {
@@ -111,6 +159,23 @@ export default function WebviewDomainSettingDialog({
                 <p style={{ marginBottom: '16px', color: '#666', fontSize: '14px' }}>
                     配置小程序的 webview 业务域名，用于内嵌网页等场景。域名需先在第三方平台中登记，仅支持 https，不能含有端口号。最多可添加 300 个。
                 </p>
+
+                <div style={{ marginBottom: '20px', padding: '12px', backgroundColor: '#f3f3f3', borderRadius: '4px' }}>
+                    <p style={{ fontSize: '14px', marginBottom: '8px', color: '#333' }}>
+                        <strong>域名校验文件：</strong>
+                    </p>
+                    <p style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
+                        下载校验文件并将其放在域名根目录下，用于验证域名所有权。
+                    </p>
+                    <Button
+                        size="small"
+                        onClick={downloadConfirmFile}
+                        disabled={!confirmFileContent || loadingConfirmFile}
+                        loading={loadingConfirmFile}
+                    >
+                        {loadingConfirmFile ? '加载中...' : '下载校验文件'}
+                    </Button>
+                </div>
 
                 <div>
                     <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', color: 'rgba(0,0,0,0.9)' }}>

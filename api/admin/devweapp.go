@@ -1152,3 +1152,27 @@ func updateDevWeAppHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, errno.OK)
 }
+
+type getJumpDomainConfirmFileResp struct {
+	FileContent string `json:"file_content" wx:"file_content"`
+	FileName    string `json:"file_name" wx:"file_name"`
+}
+
+// getJumpDomainConfirmFileHandler 获取业务域名校验文件
+func getJumpDomainConfirmFileHandler(c *gin.Context) {
+	appid := c.DefaultQuery("appid", "")
+	_, body, err := wx.PostWxJsonWithAuthToken(appid, "/wxa/get_webviewdomain_confirmfile", "", gin.H{})
+	if err != nil {
+		log.Error(err)
+		c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))
+		return
+	}
+
+	var resp getJumpDomainConfirmFileResp
+	if err := wx.WxJson.Unmarshal(body, &resp); err != nil {
+		log.Errorf("Unmarshal err, %v", err)
+		c.JSON(http.StatusOK, errno.ErrSystemError.WithData(err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, errno.OK.WithData(resp))
+}

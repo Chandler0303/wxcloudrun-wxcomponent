@@ -207,3 +207,7 @@ export const setModifyWebviewDomainRequest: IRequestMsg = {
     url: `${HOST}/admin/modify-webview-domain`, // 配置小程序业务域名
     method: "post"
 }
+export const getJumpDomainConfirmFileRequest: IRequestMsg = {
+    url: `${HOST}/admin/jump-domain-confirm-file`, // 获取业务域名校验文件
+    method: "post"
+}
