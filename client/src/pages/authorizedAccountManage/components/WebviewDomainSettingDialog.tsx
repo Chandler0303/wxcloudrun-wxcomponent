@@ -42,7 +42,6 @@ export default function WebviewDomainSettingDialog({
     useEffect(() => {
         if (visible && appid) {
             getDomainSetting();
-            getConfirmFile();
         }
     }, [visible, appid]);
 
@@ -91,21 +90,38 @@ export default function WebviewDomainSettingDialog({
         }
     };
 
-    const downloadConfirmFile = () => {
-        if (!confirmFileContent) {
-            MessagePlugin.warning('校验文件内容为空');
-            return;
-        }
+    const downloadConfirmFile = async () => {
+        setLoadingConfirmFile(true);
+        try {
+            const resp = await request({
+                request: { url: `${getJumpDomainConfirmFileRequest.url}?appid=${appid}`, method: getJumpDomainConfirmFileRequest.method }
+            });
 
-        const element = document.createElement('a');
-        const file = new Blob([confirmFileContent], { type: 'text/plain' });
-        element.href = URL.createObjectURL(file);
-        element.download = confirmFileName;
-        document.body.appendChild(element);
-        element.click();
-        document.body.removeChild(element);
-        URL.revokeObjectURL(element.href);
-        MessagePlugin.success('校验文件已下载');
+            if (resp.code === 0 && resp.data) {
+                const fileContent = resp.data.file_content || '';
+                const fileName = resp.data.file_name || '';
+
+                if (!fileContent) {
+                    MessagePlugin.warning('校验文件内容为空');
+                    return;
+                }
+
+                const element = document.createElement('a');
+                const file = new Blob([fileContent], { type: 'text/plain' });
+                element.href = URL.createObjectURL(file);
+                element.download = fileName;
+                document.body.appendChild(element);
+                element.click();
+                document.body.removeChild(element);
+                URL.revokeObjectURL(element.href);
+                MessagePlugin.success('校验文件已下载');
+            }
+        } catch (error) {
+            console.error('获取校验文件失败:', error);
+            MessagePlugin.error('获取校验文件失败');
+        } finally {
+            setLoadingConfirmFile(false);
+        }
     };
 
     const handleSubmit = async () => {
