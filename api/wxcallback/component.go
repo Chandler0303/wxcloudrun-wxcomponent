@@ -176,5 +176,6 @@ func unAuthHander(body *[]byte) error {
 		log.Errorf("DelAuthorizerRecord err %v", err)
 		return err
 	}
+	wx.InvalidateAuthorizerToken(record.AuthorizerAppid)
 	return nil
 }

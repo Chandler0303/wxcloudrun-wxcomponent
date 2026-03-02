@@ -35,8 +35,6 @@ export default function WebviewDomainSettingDialog({
     const [formData, setFormData] = useState('');
     const [loading, setLoading] = useState(false);
     const [invalidInfo, setInvalidInfo] = useState<string[] | null>(null);
-    const [confirmFileContent, setConfirmFileContent] = useState<string>('');
-    const [confirmFileName, setConfirmFileName] = useState<string>('');
     const [loadingConfirmFile, setLoadingConfirmFile] = useState(false);
 
     useEffect(() => {
@@ -60,33 +58,6 @@ export default function WebviewDomainSettingDialog({
         } catch (error) {
             console.error('获取业务域名配置失败:', error);
             MessagePlugin.error('获取业务域名配置失败');
-        }
-    };
-
-    const getConfirmFile = async () => {
-        if (!appid || !formData) return;
-
-        setLoadingConfirmFile(true);
-        try {
-            const domains = fromTextareaValue(formData);
-            if (domains.length === 0) {
-                setLoadingConfirmFile(false);
-                return;
-            }
-
-            const resp = await request({
-                request: { url: `${getJumpDomainConfirmFileRequest.url}?appid=${appid}`, method: getJumpDomainConfirmFileRequest.method },
-                data: { jump_domain: domains[0] }
-            });
-
-            if (resp.code === 0 && resp.data) {
-                setConfirmFileContent(resp.data.file_content || '');
-                setConfirmFileName(resp.data.file_name || '');
-            }
-        } catch (error) {
-            console.error('获取校验文件失败:', error);
-        } finally {
-            setLoadingConfirmFile(false);
         }
     };
 
@@ -186,7 +157,7 @@ export default function WebviewDomainSettingDialog({
                     <Button
                         size="small"
                         onClick={downloadConfirmFile}
-                        disabled={!confirmFileContent || loadingConfirmFile}
+                        disabled={loadingConfirmFile}
                         loading={loadingConfirmFile}
                     >
                         {loadingConfirmFile ? '加载中...' : '下载校验文件'}

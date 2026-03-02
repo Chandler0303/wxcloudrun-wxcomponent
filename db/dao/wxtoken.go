@@ -35,3 +35,9 @@ func SetAccessToken(record *model.WxToken) error {
 	}
 	return nil
 }
+
+// DelAccessToken 删除指定 appid 和类型的 token 记录（如取消授权时清除 authorizer_access_token）
+func DelAccessToken(appid string, tokenType int) error {
+	cli := db.Get()
+	return cli.Table(wxTokenTableName).Where("appid = ? and type = ?", appid, tokenType).Delete(&model.WxToken{}).Error
+}

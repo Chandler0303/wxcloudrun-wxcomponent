@@ -114,6 +114,13 @@ func genTokenLockKey(appid string, tokenType int) string {
 	return fmt.Sprintf("TLock_%d_%s", tokenType, appid)
 }
 
+// InvalidateAuthorizerToken 取消授权时清除该小程序的 authorizer_access_token（内存缓存 + DB），避免再次授权后仍使用旧 token 导致 40001
+func InvalidateAuthorizerToken(appid string) {
+	cacheKey := genTokenKey(appid, model.WXTOKENTYPE_AUTH)
+	db.GetCache().Delete(cacheKey)
+	_ = dao.DelAccessToken(appid, model.WXTOKENTYPE_AUTH)
+}
+
 var gUniqueId string
 
 func init() {
