@@ -147,6 +147,10 @@ export const releaseCodeRequest: IRequestMsg = {
     url: `${HOST}/admin/release-code`, // 发布代码
     method: "post"
 }
+export const batchReleaseCodeRequest: IRequestMsg = {
+    url: `${HOST}/admin/batch-release-code`, // 批量发布代码
+    method: "post"
+}
 export const getTemplateListRequest: IRequestMsg = {
     url: `${HOST}/admin/template-list`, // 拉取模板列表
     method: "get"

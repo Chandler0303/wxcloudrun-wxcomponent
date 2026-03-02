@@ -29,6 +29,7 @@ import RegionTypeDialog from './components/RegionTypeDialog';
 import ExtJsonConfigDialog from './components/ExtJsonConfigDialog';
 import BatchCommitCodeDialog from './components/BatchCommitCodeDialog';
 import BatchSubmitAuditDialog from './components/BatchSubmitAuditDialog';
+import BatchReleaseCodeDialog from './components/BatchReleaseCodeDialog';
 
 const { TabPanel } = Tabs
 
@@ -322,6 +323,7 @@ export default function AuthorizedAccountManage() {
     const [selectedMiniProgramKeys, setSelectedMiniProgramKeys] = useState<(string | number)[]>([])
     const [visibleBatchSubmitAuditDialog, setVisibleBatchSubmitAuditDialog] = useState(false)
     const [visibleBatchCommitCodeDialog, setVisibleBatchCommitCodeDialog] = useState(false)
+    const [visibleBatchReleaseCodeDialog, setVisibleBatchReleaseCodeDialog] = useState(false)
 
     useEffect(() => {
         if (selectedTab === tabs[0].value) {
@@ -497,6 +499,20 @@ export default function AuthorizedAccountManage() {
         getMiniProgramList()
     }
 
+    const openBatchReleaseCodeDialog = () => {
+        setVisibleBatchReleaseCodeDialog(true)
+    }
+
+    const handleBatchReleaseCodeClose = () => {
+        setVisibleBatchReleaseCodeDialog(false)
+        setSelectedMiniProgramKeys([])
+        getMiniProgramList()
+    }
+
+    const handleBatchReleaseCodeSuccess = () => {
+        getMiniProgramList()
+    }
+
     return (
         <div>
             <p className="text">授权帐号介绍</p>
@@ -578,6 +594,19 @@ export default function AuthorizedAccountManage() {
                             }}
                         >
                             批量提交审核 {selectedMiniProgramKeys.length > 0 ? `(${selectedMiniProgramKeys.length})` : ''}
+                        </Button>
+                        <Button
+                            theme="primary"
+                            variant="outline"
+                            onClick={() => {
+                                if (selectedMiniProgramKeys.length === 0) {
+                                    MessagePlugin.warning('请先勾选要发布的小程序')
+                                    return
+                                }
+                                openBatchReleaseCodeDialog()
+                            }}
+                        >
+                            批量发布 {selectedMiniProgramKeys.length > 0 ? `(${selectedMiniProgramKeys.length})` : ''}
                         </Button>
                     </div>
                     <Table
@@ -673,6 +702,14 @@ export default function AuthorizedAccountManage() {
                 selectedRows={miniProgramList.filter((row: any) => selectedMiniProgramKeys.includes(row.appid)).map((row: any) => ({ appid: row.appid, nickName: row.nickName }))}
                 onClose={handleBatchCommitCodeClose}
                 onSuccess={handleBatchCommitCodeSuccess}
+            />
+
+            <BatchReleaseCodeDialog
+                visible={visibleBatchReleaseCodeDialog}
+                appids={selectedMiniProgramKeys}
+                selectedRows={miniProgramList.filter((row: any) => selectedMiniProgramKeys.includes(row.appid)).map((row: any) => ({ appid: row.appid, nickName: row.nickName }))}
+                onClose={handleBatchReleaseCodeClose}
+                onSuccess={handleBatchReleaseCodeSuccess}
             />
 
         </div>

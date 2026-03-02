@@ -47,6 +47,7 @@ func Routers(e *gin.RouterGroup) {
 	g.POST("/commit-code", commitCodeHandler)
 	g.POST("/batch-commit-code", batchCommitCodeHandler)
 	g.POST("/release-code", releaseCodeHandler)
+	g.POST("/batch-release-code", batchReleaseCodeHandler)
 	g.POST("/upload-media", uploadMediaHandler)
 	g.POST("/change-visit-status", changeVisitStatusHandler)
 	g.POST("/rollback-release-version", rollbackReleaseVersionHandler)

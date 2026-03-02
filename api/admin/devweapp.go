@@ -738,6 +738,49 @@ func batchCommitCodeHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, errno.OK.WithData(batchCommitCodeResp{Success: success, Failed: failed}))
 }
 
+type batchReleaseCodeReq struct {
+	Appids []string `json:"appids" binding:"required"`
+}
+
+type batchReleaseCodeFailedItem struct {
+	Appid  string `json:"appid"`
+	ErrMsg string `json:"errMsg"`
+}
+
+type batchReleaseCodeResp struct {
+	Success []string                    `json:"success"`
+	Failed  []batchReleaseCodeFailedItem `json:"failed"`
+}
+
+func batchReleaseCodeHandler(c *gin.Context) {
+	var req batchReleaseCodeReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusOK, errno.ErrInvalidParam.WithData(err.Error()))
+		return
+	}
+	if len(req.Appids) == 0 {
+		c.JSON(http.StatusOK, errno.ErrInvalidParam.WithData("appids 不能为空"))
+		return
+	}
+	if len(req.Appids) > 20 {
+		c.JSON(http.StatusOK, errno.ErrInvalidParam.WithData("单次最多支持 20 个小程序"))
+		return
+	}
+
+	var success []string
+	var failed []batchReleaseCodeFailedItem
+
+	for _, appid := range req.Appids {
+		if _, _, err := wx.PostWxJsonWithAuthToken(appid, "/wxa/release", "", gin.H{}); err != nil {
+			failed = append(failed, batchReleaseCodeFailedItem{Appid: appid, ErrMsg: err.Error()})
+		} else {
+			success = append(success, appid)
+		}
+	}
+
+	c.JSON(http.StatusOK, errno.OK.WithData(batchReleaseCodeResp{Success: success, Failed: failed}))
+}
+
 func releaseCodeHandler(c *gin.Context) {
 	appid := c.DefaultQuery("appid", "")
 	if _, _, err := wx.PostWxJsonWithAuthToken(appid, "/wxa/release", "", gin.H{}); err != nil {
