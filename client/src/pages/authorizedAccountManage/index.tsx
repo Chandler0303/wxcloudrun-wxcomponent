@@ -557,13 +557,13 @@ export default function AuthorizedAccountManage() {
                             placeholder="请选择局点类型"
                             clearable
                             onChange={(value) => {
-                                setMiniProgramRegionType(value)
+                                setMiniProgramRegionType(value as string)
                             }}
                             value={miniProgramRegionType}
                         >
                             {Object.keys(regionType).map((key) => (
                                 <Select.Option key={key} value={key}>
-                                    {regionType[key]}
+                                    {regionType[Number(key)]}
                                 </Select.Option>
                             ))}
                         </Select>

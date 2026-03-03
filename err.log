@@ -1,0 +1,55 @@
+#10 [nodebuilder 2/4] WORKDIR /wxcloudrun-wxcomponent
+[2026-03-03 10:30:55] #10 DONE 0.0s
+[2026-03-03 10:30:55] 
+[2026-03-03 10:30:55] #11 [nodebuilder 3/4] COPY . /wxcloudrun-wxcomponent/
+[2026-03-03 10:30:56] #11 DONE 0.9s
+[2026-03-03 10:30:56] 
+[2026-03-03 10:30:56] #12 [nodebuilder 4/4] RUN cd /wxcloudrun-wxcomponent/client &&     sed -i '/"prepare":/d' package.json &&     npm install --registry=https://registry.npmmirror.com &&     npm run build
+[2026-03-03 10:30:57] #12 0.413 npm ERR! code EJSONPARSE
+[2026-03-03 10:30:57] #12 0.413 npm ERR! path /wxcloudrun-wxcomponent/client/package.json
+[2026-03-03 10:30:57] #12 0.415 npm ERR! JSON.parse Unexpected token "}" (0x7D) in JSON at position 272 while parsing near "...heckHost.mjs\",\r\n    },\r\n    \"dependencie..."
+[2026-03-03 10:30:57] #12 0.415 npm ERR! JSON.parse Failed to parse JSON data.
+[2026-03-03 10:30:57] #12 0.415 npm ERR! JSON.parse Note: package.json must be actual JSON, not just JavaScript.
+[2026-03-03 10:30:57] #12 0.416 
+[2026-03-03 10:30:57] #12 0.416 npm ERR! A complete log of this run can be found in:
+[2026-03-03 10:30:57] #12 0.416 npm ERR!     /root/.npm/_logs/2026-03-03T02_30_57_089Z-debug-0.log
+[2026-03-03 10:30:57] #12 ERROR: process "/bin/sh -c cd /wxcloudrun-wxcomponent/client &&     sed -i '/\"prepare\":/d' package.json &&     npm install --registry=https://registry.npmmirror.com &&     npm run build" did not complete successfully: exit code: 1
+[2026-03-03 10:30:57] 
+[2026-03-03 10:30:57] #13 [builder 1/4] FROM docker.io/library/golang:1.17.1-alpine3.14@sha256:13919fb9091f6667cb375d5fdf016ecd6d3a5d5995603000d422b04583de4ef9
+[2026-03-03 10:30:57] #13 resolve docker.io/library/golang:1.17.1-alpine3.14@sha256:13919fb9091f6667cb375d5fdf016ecd6d3a5d5995603000d422b04583de4ef9 0.0s done
+[2026-03-03 10:30:57] #13 sha256:da4596da1948302fc89f86da865aac212283eb07aff74d8eb05252129bd5e4f9 5.08kB / 5.08kB done
+[2026-03-03 10:30:57] #13 sha256:13919fb9091f6667cb375d5fdf016ecd6d3a5d5995603000d422b04583de4ef9 1.65kB / 1.65kB done
+[2026-03-03 10:30:57] #13 sha256:55f55d3232f63391e0797acaf145ade8f6fca2ff36795dd5ae446de360724dec 1.36kB / 1.36kB done
+[2026-03-03 10:30:57] #13 sha256:a0d0a0d46f8b52473982a3c466318f479767577551a53ffc9074c9fa7035982e 2.81MB / 2.81MB 2.4s done
+[2026-03-03 10:30:57] #13 sha256:31adcdaf11c89113a810db23d523e549d634d7de695a72b0ce98a1f912101262 281.51kB / 281.51kB 2.5s done
+[2026-03-03 10:30:57] #13 extracting sha256:a0d0a0d46f8b52473982a3c466318f479767577551a53ffc9074c9fa7035982e 0.0s done
+[2026-03-03 10:30:57] #13 sha256:b8b176561691ea11cfe541f3ee363a3aa67e3649eb3273bea62ebeea713eaecd 154B / 154B 2.6s done
+[2026-03-03 10:30:57] #13 extracting sha256:31adcdaf11c89113a810db23d523e549d634d7de695a72b0ce98a1f912101262 0.0s done
+[2026-03-03 10:30:57] #13 sha256:0a181aec76ea0e8e1b9ceb94467d41cab2fc9417199f12fa6fec3c50137b2933 80.74MB / 110.09MB 8.6s
+[2026-03-03 10:30:57] #13 extracting sha256:b8b176561691ea11cfe541f3ee363a3aa67e3649eb3273bea62ebeea713eaecd done
+[2026-03-03 10:30:57] #13 sha256:b7e85de490b301eaafbd51e519e1bf78ed069f65b9f1735b697d139b5f62beaa 155B / 155B 2.8s done
+[2026-03-03 10:30:57] ------
+[2026-03-03 10:30:57]  > [nodebuilder 4/4] RUN cd /wxcloudrun-wxcomponent/client &&     sed -i '/"prepare":/d' package.json &&     npm install --registry=https://registry.npmmirror.com &&     npm run build:
+[2026-03-03 10:30:57] 0.413 npm ERR! code EJSONPARSE
+[2026-03-03 10:30:57] 0.413 npm ERR! path /wxcloudrun-wxcomponent/client/package.json
+[2026-03-03 10:30:57] 0.415 npm ERR! JSON.parse Unexpected token "}" (0x7D) in JSON at position 272 while parsing near "...heckHost.mjs\",\r\n    },\r\n    \"dependencie..."
+[2026-03-03 10:30:57] 0.415 npm ERR! JSON.parse Failed to parse JSON data.
+[2026-03-03 10:30:57] 0.415 npm ERR! JSON.parse Note: package.json must be actual JSON, not just JavaScript.
+[2026-03-03 10:30:57] 0.416 
+[2026-03-03 10:30:57] 0.416 npm ERR! A complete log of this run can be found in:
+[2026-03-03 10:30:57] 0.416 npm ERR!     /root/.npm/_logs/2026-03-03T02_30_57_089Z-debug-0.log
+[2026-03-03 10:30:57] ------
+[2026-03-03 10:30:57] Dockerfile:8
+[2026-03-03 10:30:57] --------------------
+[2026-03-03 10:30:57]    7 |     
+[2026-03-03 10:30:57]    8 | >>> RUN cd /wxcloudrun-wxcomponent/client && \
+[2026-03-03 10:30:57]    9 | >>>     sed -i '/"prepare":/d' package.json && \
+[2026-03-03 10:30:57]   10 | >>>     npm install --registry=https://registry.npmmirror.com && \
+[2026-03-03 10:30:57]   11 | >>>     npm run build
+[2026-03-03 10:30:57]   12 |     
+[2026-03-03 10:30:57] --------------------
+[2026-03-03 10:30:57] ERROR: failed to solve: process "/bin/sh -c cd /wxcloudrun-wxcomponent/client &&     sed -i '/\"prepare\":/d' package.json &&     npm install --registry=https://registry.npmmirror.com &&     npm run build" did not complete successfully: exit code: 1
+***
+-----------构建wxcomponent-320896-009-----------
+2026-03-03 10:30:27 create_build_image : creating
+2026-03-03 10:30:59 check_build_image : fail

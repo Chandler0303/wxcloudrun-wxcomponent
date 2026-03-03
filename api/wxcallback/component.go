@@ -125,6 +125,7 @@ func newAuthHander(body *[]byte) error {
 		FuncInfo:      appinfo.AuthorizationInfo.StrFuncInfo,
 		VerifyInfo:    appinfo.AuthorizerInfo.VerifyInfo.Id,
 		AuthTime:      time.Unix(record.CreateTime, 0),
+		ExtJson:       `{"config":""}`,
 	}); err != nil {
 		return err
 	}

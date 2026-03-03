@@ -63,7 +63,6 @@ export default function ExtJsonConfigDialog({
                     placeholder="请输入extJson配置内容"
                     autosize={{ minRows: 4, maxRows: 10 }}
                     maxlength={500}
-                    showLimitNumber
                 />
         </Dialog>
     );

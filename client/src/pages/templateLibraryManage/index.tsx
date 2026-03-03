@@ -39,7 +39,7 @@ export default function TemplateLibraryManage() {
     fetchTemplates();
   }, []);
 
-  const handleAdd = async (row) => {
+  const handleAdd = async (row: any) => {
     const resp = await request({
       request: addTemplateDraftRequest,
       data: { draftId: row.draftId },
@@ -51,8 +51,8 @@ export default function TemplateLibraryManage() {
     }
   };
 
-  const handleDelete = async (row) => {
-    const confirmDia = DialogPlugin.confirm({
+  const handleDelete = async (row: any) => {
+    const confirmDia = DialogPlugin?.confirm?.({
       header: '确认删除',
       body: `确定要删除模板ID：${row.templateId} 吗？`,
       onConfirm: async () => {
@@ -61,13 +61,13 @@ export default function TemplateLibraryManage() {
           data: { templateId: row.templateId },
         });
         if (resp.code === 0) {
-          confirmDia.hide();
+          confirmDia?.hide?.();
           MessagePlugin.success('删除成功');
           fetchTemplates();
         }
       },
       onClose: () => {
-        confirmDia.hide();
+        confirmDia?.hide?.();
       }
     });
   };
@@ -76,11 +76,11 @@ export default function TemplateLibraryManage() {
     { colKey: 'templateId', title: '模板ID' },
     { colKey: 'userVersion', title: '版本号' },
     { colKey: 'userDesc', title: '模板描述' },
-    { colKey: 'createTime', width: 220, title: '创建时间', cell: ({ row }) => moment(row.createTime).format('YYYY-MM-DD HH:mm:ss') },
+    { colKey: 'createTime', width: 220, title: '创建时间', cell: ({ row }: { row: any }) => moment(row.createTime).format('YYYY-MM-DD HH:mm:ss') },
     {
       colKey: 'op',
       title: '操作',
-      cell: ({ row }) => (
+      cell: ({ row }: { row: any }) => (
         <Button theme="danger" size="small" onClick={() => handleDelete(row)}>
           删除
         </Button>
@@ -92,11 +92,11 @@ export default function TemplateLibraryManage() {
     { colKey: 'draftId', title: '草稿ID' },
     { colKey: 'userVersion', title: '版本号' },
     { colKey: 'userDesc', width: 220, title: '草稿描述' },
-    { colKey: 'createTime', width: 220, title: '创建时间', cell: ({ row }) => moment(row.createTime).format('YYYY-MM-DD HH:mm:ss') },
+    { colKey: 'createTime', width: 220, title: '创建时间', cell: ({ row }: { row: any }) => moment(row.createTime).format('YYYY-MM-DD HH:mm:ss') },
     {
       colKey: 'op',
       title: '操作',
-      cell: ({ row }) => (
+      cell: ({ row }: { row: any }) => (
         <Button theme="primary" size="small" onClick={() => handleAdd(row)}>
           添加到模板库
         </Button>
