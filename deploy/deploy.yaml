@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${SERVICE_NAME}
+  namespace: ${KUBE_NAMESPACE}
+  labels:
+    app: ${SERVICE_NAME}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ${SERVICE_NAME}
+  template:
+    metadata:
+      labels:
+        app: ${SERVICE_NAME}
+    spec:
+      imagePullSecrets:
+        - name: ${IMAGE_PULL_USER}
+      containers:
+        - name: ${SERVICE_NAME}
+          image: ${DOCKERHUB_URL}/${DOCKERHUB_PROJECT}/${SERVICE_NAME}:${DEV_VERSION}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+              name: http
+          env:
+            - name: MYSQL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: ${SERVICE_NAME}-secret
+                  key: mysql-username
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ${SERVICE_NAME}-secret
+                  key: mysql-password
+            - name: MYSQL_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: ${SERVICE_NAME}-secret
+                  key: mysql-address
+            - name: MYSQL_DATABASE
+              value: "wxcomponent"
+            - name: WX_APPID
+              valueFrom:
+                secretKeyRef:
+                  name: ${SERVICE_NAME}-secret
+                  key: wx-appid
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${SERVICE_NAME}
+  namespace: ${KUBE_NAMESPACE}
+spec:
+  selector:
+    app: ${SERVICE_NAME}
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+  type: ClusterIP
