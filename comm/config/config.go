@@ -28,9 +28,16 @@ type Comm struct {
 	Version string
 }
 
+// WxCallback 微信消息推送配置（自建服务器使用，云托管可留空）
+type WxCallback struct {
+	Token         string
+	EncodingAESKey string
+}
+
 var ServerConf = &Server{}
 var CommConf = &Comm{}
 var WxApiConf = &WxApi{}
+var WxCallbackConf = &WxCallback{}
 
 var cfg *ini.File
 
@@ -44,6 +51,7 @@ func init() {
 	mapTo("server", ServerConf)
 	mapTo("comm", CommConf)
 	mapTo("wxapi", WxApiConf)
+	mapTo("wxcallback", WxCallbackConf)
 	if ServerConf.AesKey == "" {
 		ServerConf.AesKey = encrypt.GenerateMd5(os.Getenv("MYSQL_PASSWORD"))
 	}
